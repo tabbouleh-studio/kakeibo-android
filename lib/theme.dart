@@ -168,6 +168,24 @@ ThemeData buildTheme(Brightness brightness) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       extendedTextStyle: text.titleMedium?.copyWith(fontWeight: FontWeight.w600),
     ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: p.card,
+      surfaceTintColor: Colors.transparent,
+      indicatorColor: p.accentSoft,
+      elevation: 0,
+      height: 72,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) =>
+            IconThemeData(color: states.contains(WidgetState.selected) ? p.onAccentSoft : p.muted),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => text.labelMedium?.copyWith(
+          color: states.contains(WidgetState.selected) ? p.ink : p.muted,
+          fontWeight: states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

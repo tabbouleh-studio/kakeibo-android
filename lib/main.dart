@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/providers.dart';
-import 'features/home/home_screen.dart';
 import 'features/lock/app_gate.dart';
+import 'features/shell/app_shell.dart';
 import 'models/app_settings.dart';
 import 'theme.dart';
 
@@ -33,7 +33,7 @@ class KakeiboApp extends StatelessWidget {
       darkTheme: buildTheme(Brightness.dark),
       scaffoldMessengerKey: messengerKey,
       builder: (context, child) => AppGate(child: child!),
-      home: const HomeScreen(),
+      home: const AppShell(),
     );
   }
 }

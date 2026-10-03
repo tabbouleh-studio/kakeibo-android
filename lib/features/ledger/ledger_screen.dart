@@ -59,84 +59,72 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
     final showingSearch = _searching && query.isNotEmpty;
     final entries = ref.watch(showingSearch ? searchResultsProvider : ledgerEntriesProvider);
 
-    return PopScope(
-      canPop: !_searching,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _toggleSearch();
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: _searching
-              ? TextField(
-                  controller: _search,
-                  autofocus: true,
-                  textInputAction: TextInputAction.search,
-                  decoration: const InputDecoration(
-                    hintText: 'Search notes, categories, amounts',
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onChanged: ref.read(ledgerSearchProvider.notifier).set,
-                )
-              : const Text('Ledger'),
-          centerTitle: !_searching,
-          actions: [
-            IconButton(
-              tooltip: _searching ? 'Close search' : 'Search',
-              icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
-              onPressed: _toggleSearch,
+    return Scaffold(
+      appBar: AppBar(
+        title: _searching
+            ? TextField(
+                controller: _search,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  hintText: 'Search notes, categories, amounts',
+                  filled: false,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: ref.read(ledgerSearchProvider.notifier).set,
+              )
+            : const Text('Ledger'),
+        centerTitle: !_searching,
+        actions: [
+          IconButton(
+            tooltip: _searching ? 'Close search' : 'Search',
+            icon: Icon(_searching ? Icons.close_rounded : Icons.search_rounded),
+            onPressed: _toggleSearch,
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          if (!_searching) const _MonthSwitcher(),
+          Expanded(
+            child: entries.when(
+              data: (list) {
+                final visible = [
+                  for (final e in list)
+                    if (!_hidden.contains(e.id)) e,
+                ];
+                if (_searching && query.isEmpty) {
+                  return const _EmptyState(
+                    icon: Icons.search_rounded,
+                    title: 'Search all months',
+                    message:
+                        'Try a note like “coffee”, a category like “Culture”, '
+                        'or an amount like 2.5',
+                  );
+                }
+                if (visible.isEmpty) {
+                  return showingSearch
+                      ? const _EmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'No matches',
+                          message: 'Nothing found for that search.',
+                        )
+                      : const _EmptyState(
+                          icon: Icons.menu_book_outlined,
+                          title: 'A clean page',
+                          message: 'No expenses in this month yet.',
+                        );
+                }
+                return _EntryList(entries: visible, onDelete: _delete);
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Could not load entries.\n$e')),
             ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          tooltip: 'Add expense',
-          onPressed: () =>
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EntryScreen())),
-          child: const Icon(Icons.add_rounded),
-        ),
-        body: Column(
-          children: [
-            if (!_searching) const _MonthSwitcher(),
-            Expanded(
-              child: entries.when(
-                data: (list) {
-                  final visible = [
-                    for (final e in list)
-                      if (!_hidden.contains(e.id)) e,
-                  ];
-                  if (_searching && query.isEmpty) {
-                    return const _EmptyState(
-                      icon: Icons.search_rounded,
-                      title: 'Search all months',
-                      message:
-                          'Try a note like “coffee”, a category like “Culture”, '
-                          'or an amount like 2.5',
-                    );
-                  }
-                  if (visible.isEmpty) {
-                    return showingSearch
-                        ? const _EmptyState(
-                            icon: Icons.search_off_rounded,
-                            title: 'No matches',
-                            message: 'Nothing found for that search.',
-                          )
-                        : const _EmptyState(
-                            icon: Icons.menu_book_outlined,
-                            title: 'A clean page',
-                            message: 'No expenses in this month yet.',
-                          );
-                  }
-                  return _EntryList(entries: visible, onDelete: _delete);
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(child: Text('Could not load entries.\n$e')),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -9,12 +9,8 @@ import '../../theme.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
 import '../../widgets/money_text.dart';
-import '../entry/entry_screen.dart';
-import '../ledger/ledger_screen.dart';
-import '../reflection/reflection_screen.dart';
 import '../settings/backup_actions.dart';
 import '../settings/month_setup_screen.dart';
-import '../settings/settings_screen.dart';
 import 'progress_widgets.dart';
 
 void _open(BuildContext context, Widget screen) =>
@@ -29,11 +25,6 @@ class HomeScreen extends ConsumerWidget {
     final period = ref.watch(currentPeriodProvider);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _open(context, const EntryScreen()),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add expense'),
-      ),
       body: SafeArea(
         bottom: false,
         child: summary.when(
@@ -63,7 +54,7 @@ class _HomeBody extends ConsumerWidget {
     final hasData = summary.hasPlan || summary.spentFils > 0;
     final remind = hasData && ref.watch(backupReminderProvider);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
         const _Header(),
         const SizedBox(height: 20),
@@ -94,7 +85,7 @@ class _HomeBody extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              'Nothing recorded yet. Tap “Add expense” to log your first one.',
+              'Nothing recorded yet. Tap + below to log your first one.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -129,23 +120,6 @@ class _Header extends StatelessWidget {
               Text('Kakeibo', style: theme.textTheme.headlineMedium),
             ],
           ),
-        ),
-        _HeaderButton(
-          tooltip: 'Reflect',
-          icon: Icons.self_improvement_rounded,
-          onPressed: () => _open(context, const ReflectionScreen()),
-        ),
-        const SizedBox(width: 8),
-        _HeaderButton(
-          tooltip: 'Ledger',
-          icon: Icons.receipt_long_outlined,
-          onPressed: () => _open(context, const LedgerScreen()),
-        ),
-        const SizedBox(width: 8),
-        _HeaderButton(
-          tooltip: 'Settings',
-          icon: Icons.tune_rounded,
-          onPressed: () => _open(context, const SettingsScreen()),
         ),
       ],
     );
@@ -204,28 +178,6 @@ class _BackupBanner extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _HeaderButton extends StatelessWidget {
-  const _HeaderButton({required this.tooltip, required this.icon, required this.onPressed});
-
-  final String tooltip;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return IconButton.filledTonal(
-      tooltip: tooltip,
-      style: IconButton.styleFrom(
-        backgroundColor: scheme.surfaceContainerHigh,
-        foregroundColor: scheme.onSurface,
-      ),
-      icon: Icon(icon),
-      onPressed: onPressed,
     );
   }
 }
