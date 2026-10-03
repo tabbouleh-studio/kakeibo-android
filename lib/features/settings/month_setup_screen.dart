@@ -181,7 +181,7 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  flex: 5,
+                  flex: 1,
                   child: TextFormField(
                     controller: row.name,
                     textCapitalization: TextCapitalization.sentences,
@@ -192,8 +192,9 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  flex: 4,
+                  flex: 1,
                   child: MoneyField(
+                    compact: true,
                     controller: row.amount,
                     validator: (v) => row.isBlank ? null : _validateAmount(v),
                   ),

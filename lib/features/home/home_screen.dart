@@ -150,43 +150,27 @@ class _BackupBanner extends ConsumerWidget {
     final days = last == null ? null : daysBetween(last, DateTime.now());
     return Card(
       color: theme.colorScheme.surfaceContainerHigh,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(14, 4, 0, 4),
+        child: Row(
           children: [
-            Row(
-              children: [
-                Icon(Icons.save_alt_rounded, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Back up now?', style: theme.textTheme.titleSmall),
-                      Text(
-                        days == null
-                            ? 'Your data lives only on this phone.'
-                            : 'Last backup was $days days ago.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            Icon(Icons.save_alt_rounded, size: 20, color: theme.colorScheme.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                days == null ? 'Not backed up yet' : 'Last backup $days days ago',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium,
+              ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: ref.read(backupReminderProvider.notifier).snooze,
-                  child: const Text('Later'),
-                ),
-                TextButton(onPressed: () => runBackup(context, ref), child: const Text('Back up')),
-              ],
+            TextButton(onPressed: () => runBackup(context, ref), child: const Text('Back up')),
+            IconButton(
+              tooltip: 'Remind me later',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.close_rounded, size: 20, color: theme.colorScheme.onSurfaceVariant),
+              onPressed: ref.read(backupReminderProvider.notifier).snooze,
             ),
           ],
         ),
@@ -265,7 +249,24 @@ class _HeroCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const labelWidth = 44.0;
+              final x = constraints.maxWidth * elapsed.clamp(0.0, 1.0) - labelWidth / 2;
+              return Padding(
+                padding: EdgeInsets.only(left: x.clamp(0.0, constraints.maxWidth - labelWidth)),
+                child: SizedBox(
+                  width: labelWidth,
+                  child: Text(
+                    'today',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.labelSmall?.copyWith(color: soft),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 6),
           Row(
             children: [
               Text(
@@ -397,9 +398,13 @@ class _SavingsCard extends StatelessWidget {
             ProgressRing(
               value: summary.savingsProgress,
               color: color,
-              size: 60,
+              size: 64,
               strokeWidth: 7,
-              child: Icon(Icons.savings_outlined, color: color, size: 24),
+              child: Text(
+                '${(summary.savingsProgress * 100).round()}%',
+                style: moneyStyle(theme.textTheme.labelMedium)
+                    .copyWith(color: color, fontWeight: FontWeight.w600),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -408,19 +413,14 @@ class _SavingsCard extends StatelessWidget {
                 children: [
                   Text('Savings', style: theme.textTheme.bodyMedium?.copyWith(color: muted)),
                   const SizedBox(height: 2),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      MoneyText(summary.savedFils, size: 22),
-                      Flexible(
-                        child: Text(
-                          '  of ${context.money(summary.savingsGoalFils)}',
-                          overflow: TextOverflow.ellipsis,
-                          style: moneyStyle(theme.textTheme.bodySmall).copyWith(color: muted),
-                        ),
-                      ),
-                    ],
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: MoneyText(summary.savedFils, size: 22),
+                  ),
+                  Text(
+                    'of ${context.money(summary.savingsGoalFils)} goal',
+                    style: moneyStyle(theme.textTheme.bodySmall).copyWith(color: muted),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -433,11 +433,6 @@ class _SavingsCard extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${(summary.savingsProgress * 100).round()}%',
-              style: moneyStyle(theme.textTheme.titleLarge).copyWith(color: color),
             ),
           ],
         ),

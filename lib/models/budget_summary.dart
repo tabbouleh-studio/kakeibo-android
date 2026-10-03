@@ -61,10 +61,8 @@ class BudgetSummary {
     return min(1, spent / spendableFils);
   }
 
-  /// For display: share of the spendable amount when planned, otherwise
-  /// share of everything spent. 0..1.
+  /// Share of everything spent this month that went to [category], 0..1.
   double categoryShare(SpendCategory category) {
-    if (hasPlan) return categoryFraction(category);
     final total = spentFils;
     return total == 0 ? 0 : spentByCategory[category]! / total;
   }

@@ -11,6 +11,7 @@ class AmountKeypad extends StatelessWidget {
     required this.onKey,
     required this.onClear,
     this.allowDecimal = true,
+    this.keyHeight = 58,
   });
 
   final ValueChanged<String> onKey;
@@ -18,6 +19,7 @@ class AmountKeypad extends StatelessWidget {
 
   /// False for currencies without decimals; the point key is then blank.
   final bool allowDecimal;
+  final double keyHeight;
 
   static const _rows = [
     ['1', '2', '3'],
@@ -39,8 +41,9 @@ class AmountKeypad extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(4),
                     child: key == '.' && !allowDecimal
-                        ? const SizedBox(height: 58)
+                        ? SizedBox(height: keyHeight)
                         : _Key(
+                            height: keyHeight,
                             keyValue: key,
                             onTap: () {
                               HapticFeedback.selectionClick();
@@ -63,7 +66,9 @@ class AmountKeypad extends StatelessWidget {
 }
 
 class _Key extends StatelessWidget {
-  const _Key({required this.keyValue, required this.onTap, this.onLongPress});
+  const _Key({required this.keyValue, required this.onTap, this.onLongPress, this.height = 58});
+
+  final double height;
 
   final String keyValue;
   final VoidCallback onTap;
@@ -83,7 +88,7 @@ class _Key extends StatelessWidget {
         onTap: onTap,
         onLongPress: onLongPress,
         child: SizedBox(
-          height: 58,
+          height: height,
           child: Center(
             child: keyValue == backspaceKey
                 ? const Icon(Icons.backspace_outlined, semanticLabel: 'Delete', size: 22)

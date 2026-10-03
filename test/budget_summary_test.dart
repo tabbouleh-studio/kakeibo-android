@@ -24,6 +24,7 @@ void main() {
     expect(s.spentByCategory[SpendCategory.needs], 150000);
     expect(s.spentByCategory[SpendCategory.culture], 0);
     expect(s.categoryFraction(SpendCategory.needs), 0.375);
+    expect(s.categoryShare(SpendCategory.needs), 1);
   });
 
   test('savings intact while within budget', () {
@@ -55,7 +56,7 @@ void main() {
     expect(s.savingsProgress, 0);
   });
 
-  test('category share without a plan uses total spent', () {
+  test('category share is the share of total spent', () {
     final s = BudgetSummary.compute(
       hasPlan: false,
       incomeFils: 0,

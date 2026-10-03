@@ -97,8 +97,7 @@ class SettingsScreen extends ConsumerWidget {
                 secondary: const _IconBox(icon: Icons.visibility_off_outlined),
                 title: Text('Hide amounts', style: theme.textTheme.titleSmall),
                 subtitle: Text(
-                  'Show •••• instead of numbers. Tap the eye on Home to peek; '
-                  'they hide again when you leave the app',
+                  'Show •••• instead of numbers. Tap the eye on Home to peek',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

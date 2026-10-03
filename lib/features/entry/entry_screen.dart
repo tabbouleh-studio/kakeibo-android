@@ -129,90 +129,96 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
       ),
       body: SafeArea(
         child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _AmountDisplay(text: _amountText),
-                            const SizedBox(height: 14),
-                            ActionChip(
-                              avatar: const Icon(Icons.calendar_today_rounded, size: 16),
-                              label: Text(formatDay(_date)),
-                              onPressed: _pickDate,
-                              side: BorderSide.none,
-                              backgroundColor: theme.colorScheme.surfaceContainerHigh,
-                              shape: const StadiumBorder(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          for (final c in SpendCategory.values)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: _CategoryButton(
-                                  category: c,
-                                  selected: _category == c,
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    setState(() => _category = c);
-                                  },
+          builder: (context, constraints) {
+            // Taller phones get bigger keys instead of empty space.
+            final keyHeight = (constraints.maxHeight * 0.095).clamp(56.0, 80.0);
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _AmountDisplay(text: _amountText),
+                              const SizedBox(height: 14),
+                              ActionChip(
+                                avatar: const Icon(Icons.calendar_today_rounded, size: 16),
+                                label: Text(formatDay(_date)),
+                                onPressed: _pickDate,
+                                side: BorderSide.none,
+                                backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                                shape: const StadiumBorder(),
+                              ),
+                              const SizedBox(height: 16),
+                              TextField(
+                                controller: _note,
+                                textCapitalization: TextCapitalization.sentences,
+                                textAlign: TextAlign.center,
+                                decoration: const InputDecoration(
+                                  hintText: 'Add a note (optional)',
+                                  prefixIcon: Icon(Icons.notes_rounded),
+                                  suffixIcon: SizedBox(width: 48),
                                 ),
                               ),
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            for (final c in SpendCategory.values)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: _CategoryButton(
+                                    height: keyHeight + 20,
+                                    category: c,
+                                    selected: _category == c,
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      setState(() => _category = c);
+                                    },
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        AmountKeypad(
+                          keyHeight: keyHeight,
+                          allowDecimal: _currency.decimals > 0,
+                          onKey: (key) => setState(() {
+                            final start = _replaceOnType && key != backspaceKey ? '' : _amountText;
+                            _replaceOnType = false;
+                            _amountText = applyAmountKey(start, key, decimals: _currency.decimals);
+                          }),
+                          onClear: () => setState(() => _amountText = ''),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 58,
+                            child: FilledButton(
+                              onPressed: _canSave ? _save : null,
+                              child: Text(_saveLabel, style: moneyStyle(null)),
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: TextField(
-                          controller: _note,
-                          textCapitalization: TextCapitalization.sentences,
-                          decoration: const InputDecoration(
-                            hintText: 'Add a note',
-                            prefixIcon: Icon(Icons.notes_rounded),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      AmountKeypad(
-                        allowDecimal: _currency.decimals > 0,
-                        onKey: (key) => setState(() {
-                          final start = _replaceOnType && key != backspaceKey ? '' : _amountText;
-                          _replaceOnType = false;
-                          _amountText = applyAmountKey(start, key, decimals: _currency.decimals);
-                        }),
-                        onClear: () => setState(() => _amountText = ''),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 58,
-                          child: FilledButton(
-                            onPressed: _canSave ? _save : null,
-                            child: Text(_saveLabel, style: moneyStyle(null)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
@@ -277,9 +283,15 @@ class _AmountDisplay extends StatelessWidget {
 }
 
 class _CategoryButton extends StatelessWidget {
-  const _CategoryButton({required this.category, required this.selected, required this.onTap});
+  const _CategoryButton({
+    required this.category,
+    required this.selected,
+    required this.onTap,
+    this.height = 80,
+  });
 
   final SpendCategory category;
+  final double height;
   final bool selected;
   final VoidCallback onTap;
 
@@ -303,7 +315,7 @@ class _CategoryButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: SizedBox(
-            height: 80,
+            height: height,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

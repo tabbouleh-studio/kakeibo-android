@@ -357,8 +357,9 @@ class _Breakdown extends StatelessWidget {
                 children: [
                   Icon(c.icon, size: 16, color: c.color(theme.brightness)),
                   const SizedBox(width: 8),
-                  SizedBox(width: 64, child: Text(c.label, style: theme.textTheme.bodySmall)),
+                  Expanded(flex: 3, child: Text(c.label, style: theme.textTheme.bodySmall)),
                   Expanded(
+                    flex: 4,
                     child: ProgressBar(
                       value: numbers.spentByCategory[c]! / total,
                       color: c.color(theme.brightness),
@@ -366,9 +367,13 @@ class _Breakdown extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    context.money(numbers.spentByCategory[c]!),
-                    style: moneyStyle(theme.textTheme.bodySmall),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      context.money(numbers.spentByCategory[c]!),
+                      textAlign: TextAlign.right,
+                      style: moneyStyle(theme.textTheme.bodySmall),
+                    ),
                   ),
                 ],
               ),
