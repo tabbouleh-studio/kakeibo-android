@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/providers.dart';
 import 'features/home/home_screen.dart';
+import 'features/lock/app_gate.dart';
 import 'models/app_settings.dart';
 import 'theme.dart';
 
@@ -30,6 +31,8 @@ class KakeiboApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
+      scaffoldMessengerKey: messengerKey,
+      builder: (context, child) => AppGate(child: child!),
       home: const HomeScreen(),
     );
   }

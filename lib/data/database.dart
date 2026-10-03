@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import '../models/enums.dart';
+import '../models/recurring.dart';
 import '../util/money.dart';
 import '../util/period.dart';
 import 'tables.dart';
@@ -249,4 +250,48 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteReflection(int id) =>
       (delete(reflections)..where((r) => r.id.equals(id))).go();
+
+  // Recurring items
+
+  Stream<List<RecurringItem>> watchRecurringItems() =>
+      (select(recurringItems)..orderBy([(r) => OrderingTerm.asc(r.name)])).watch();
+
+  Future<void> saveRecurringItem(RecurringItemsCompanion item) => item.id.present
+      ? (update(recurringItems)..where((r) => r.id.equals(item.id.value))).write(item)
+      : into(recurringItems).insert(item);
+
+  /// Past entries made from the item stay in the ledger.
+  Future<void> deleteRecurringItem(int id) =>
+      (delete(recurringItems)..where((r) => r.id.equals(id))).go();
+
+  /// Logs every due occurrence of active recurring items up to [today] as an
+  /// entry and moves their next due date on. Returns how many were added.
+  Future<int> processDueRecurring(DateTime today) => transaction(() async {
+    final due = await (select(
+      recurringItems,
+    )..where((r) => r.active.equals(true) & r.nextDueDate.isSmallerOrEqualValue(today))).get();
+    var added = 0;
+    for (final item in due) {
+      final run = occurrencesUntil(item.nextDueDate, item.frequency, today);
+      final now = DateTime.now();
+      await batch(
+        (b) => b.insertAll(entries, [
+          for (final date in run.due)
+            EntriesCompanion.insert(
+              amountFils: item.amountFils,
+              category: item.category,
+              date: date,
+              note: Value(item.name),
+              createdAt: now,
+              recurringId: Value(item.id),
+            ),
+        ]),
+      );
+      await (update(recurringItems)..where((r) => r.id.equals(item.id))).write(
+        RecurringItemsCompanion(nextDueDate: Value(run.next)),
+      );
+      added += run.due.length;
+    }
+    return added;
+  });
 }

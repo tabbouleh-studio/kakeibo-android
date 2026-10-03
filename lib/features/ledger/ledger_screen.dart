@@ -298,9 +298,21 @@ class _EntryRow extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyLarge,
         ),
-        subtitle: hasNote
-            ? Text(
-                entry.category.label,
+        subtitle: hasNote || entry.recurringId != null
+            ? Text.rich(
+                TextSpan(
+                  children: [
+                    if (entry.recurringId != null)
+                      const WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 4),
+                          child: Icon(Icons.repeat_rounded, size: 14),
+                        ),
+                      ),
+                    TextSpan(text: entry.category.label),
+                  ],
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

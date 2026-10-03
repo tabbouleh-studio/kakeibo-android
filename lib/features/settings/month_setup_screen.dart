@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database.dart';
 import '../../data/providers.dart';
-import '../../theme.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
+import '../../widgets/money_field.dart';
 import '../../widgets/money_text.dart';
 
 /// Set intentions for the current budget month: income, fixed costs, savings goal.
@@ -134,7 +134,7 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
                           icon: Icons.payments_outlined,
                           title: 'Income',
                           subtitle: 'What comes in this month',
-                          child: _MoneyField(controller: _income, validator: _validateAmount),
+                          child: MoneyField(controller: _income, validator: _validateAmount),
                         ),
                         const SizedBox(height: 12),
                         _Section(
@@ -151,7 +151,7 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
                           icon: Icons.savings_outlined,
                           title: 'Savings goal',
                           subtitle: 'Set aside first, before any spending',
-                          child: _MoneyField(
+                          child: MoneyField(
                             controller: _savings,
                             validator: (v) => _validateAmount(v, required: false),
                           ),
@@ -188,7 +188,7 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 4,
-                  child: _MoneyField(
+                  child: MoneyField(
                     controller: row.amount,
                     validator: (v) => row.isBlank ? null : _validateAmount(v),
                   ),
@@ -337,24 +337,6 @@ class _SummaryBar extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _MoneyField extends StatelessWidget {
-  const _MoneyField({required this.controller, this.validator});
-
-  final TextEditingController controller;
-  final FormFieldValidator<String>? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: moneyStyle(Theme.of(context).textTheme.titleMedium),
-      decoration: const InputDecoration(prefixText: 'KD ', hintText: '0.000'),
-      validator: validator,
     );
   }
 }

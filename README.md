@@ -1,17 +1,25 @@
-# kakeibo
+# Kakeibo
 
-A new Flutter project.
+A personal, offline budgeting app for Android based on the Japanese Kakeibo method,
+in Kuwaiti Dinar. No accounts, no internet, no ads: everything stays on the phone.
 
-## Getting Started
+## Build and install
 
-This project is a starting point for a Flutter application.
+```
+dart run build_runner build
+flutter analyze
+flutter test
+flutter build apk --release
+~/Library/Android/sdk/platform-tools/adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
 
-A few resources to get you started if this is your first Flutter project:
+Check the release APK has no INTERNET permission:
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```
+~/Library/Android/sdk/build-tools/36.0.0/aapt2 dump permissions build/app/outputs/flutter-apk/app-release.apk
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Backups
+
+Settings → Back up writes one JSON file with all data. Copy it to your laptop.
+Settings → Restore validates a backup, shows what it contains, and replaces everything.

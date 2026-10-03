@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:local_auth/local_auth.dart';
 
 import '../../data/providers.dart';
 import '../../models/app_settings.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
+import '../lock/app_gate.dart';
 import 'backup_actions.dart';
 import 'month_setup_screen.dart';
+import 'recurring_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -44,10 +47,41 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => _pickMonthStart(context, ref, settings.monthStartDay),
               ),
               _Tile(
+                icon: Icons.repeat_rounded,
+                title: 'Recurring entries',
+                subtitle: switch (ref.watch(recurringItemsProvider).value?.length ?? 0) {
+                  0 => 'Subscriptions and other repeating expenses',
+                  1 => '1 recurring entry',
+                  final n => '$n recurring entries',
+                },
+                onTap: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const RecurringScreen())),
+              ),
+              _Tile(
                 icon: Icons.view_week_outlined,
                 title: 'Week starts on',
                 subtitle: AppSettings.weekStartChoices[settings.weekStartDay] ?? 'Sunday',
                 onTap: () => _pickWeekStart(context, ref, settings.weekStartDay),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const _GroupLabel('Privacy'),
+          _Group(
+            children: [
+              SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                secondary: _IconBox(icon: Icons.lock_outline_rounded),
+                title: Text('App lock', style: theme.textTheme.titleSmall),
+                subtitle: Text(
+                  'Use your fingerprint, face or phone PIN to open Kakeibo',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: settings.lockEnabled,
+                onChanged: (on) => _setLock(context, ref, on),
               ),
             ],
           ),
@@ -96,6 +130,26 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _setLock(BuildContext context, WidgetRef ref, bool on) async {
+    final notifier = ref.read(settingsProvider.notifier);
+    if (!on) return notifier.setLockEnabled(false);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      if (!await ref.read(localAuthProvider).isDeviceSupported()) {
+        messenger.showSnackBar(const SnackBar(content: Text('This phone can’t lock apps.')));
+        return;
+      }
+      if (await authenticate(ref, 'Confirm to turn on app lock')) {
+        await notifier.setLockEnabled(true);
+      }
+    } on LocalAuthException catch (e) {
+      final text = e.code == LocalAuthExceptionCode.noCredentialsSet
+          ? 'Set up a screen lock on your phone first.'
+          : 'App lock not turned on: ${e.description ?? e.code.name}';
+      messenger.showSnackBar(SnackBar(content: Text(text)));
+    }
   }
 
   Future<void> _pickMonthStart(BuildContext context, WidgetRef ref, int current) async {
@@ -245,15 +299,7 @@ class _Tile extends StatelessWidget {
     final theme = Theme.of(context);
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: Icon(icon, size: 20, color: theme.colorScheme.onPrimaryContainer),
-      ),
+      leading: _IconBox(icon: icon),
       title: Text(title, style: theme.textTheme.titleSmall),
       subtitle: Text(
         subtitle,
@@ -261,6 +307,26 @@ class _Tile extends StatelessWidget {
       ),
       trailing: Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant),
       onTap: onTap,
+    );
+  }
+}
+
+class _IconBox extends StatelessWidget {
+  const _IconBox({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Icon(icon, size: 20, color: scheme.onPrimaryContainer),
     );
   }
 }

@@ -158,3 +158,7 @@ final backupReminderProvider = NotifierProvider<BackupReminderNotifier, bool>(
 final reflectionsProvider = StreamProvider.family<List<Reflection>, ReflectionType>(
   (ref, type) => ref.watch(databaseProvider).watchReflections(type),
 );
+
+final recurringItemsProvider = StreamProvider<List<RecurringItem>>(
+  (ref) => ref.watch(databaseProvider).watchRecurringItems(),
+);
