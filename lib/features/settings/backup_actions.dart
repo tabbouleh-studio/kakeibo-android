@@ -26,6 +26,8 @@ Future<void> runBackup(BuildContext context, WidgetRef ref) async {
         monthStartDay: settings.monthStartDay,
         weekStartDay: settings.weekStartDay,
         lockEnabled: settings.lockEnabled,
+        currencyCode: settings.currencyCode,
+        hideAmounts: settings.hideAmounts,
       ),
     );
     final uri = await FilePicker.saveFile(
@@ -45,6 +47,7 @@ Future<void> runBackup(BuildContext context, WidgetRef ref) async {
 /// Exports all entries as CSV.
 Future<void> runCsvExport(BuildContext context, WidgetRef ref) async {
   final messenger = ScaffoldMessenger.of(context);
+  final settings = ref.read(settingsProvider);
   try {
     final entries = await ref.read(databaseProvider).allEntries();
     if (entries.isEmpty) {
@@ -54,7 +57,7 @@ Future<void> runCsvExport(BuildContext context, WidgetRef ref) async {
     final uri = await FilePicker.saveFile(
       dialogTitle: 'Export expenses',
       fileName: 'kakeibo-expenses-${_stamp()}.csv',
-      bytes: entriesToCsv(entries),
+      bytes: entriesToCsv(entries, currency: settings.currency),
       mimeType: 'text/csv',
     );
     if (uri != null) _toast(messenger, 'Exported ${entries.length} expenses.');

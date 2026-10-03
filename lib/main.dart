@@ -7,6 +7,7 @@ import 'features/lock/app_gate.dart';
 import 'features/shell/app_shell.dart';
 import 'models/app_settings.dart';
 import 'theme.dart';
+import 'widgets/money_scope.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +33,17 @@ class KakeiboApp extends StatelessWidget {
       theme: buildTheme(Brightness.light),
       darkTheme: buildTheme(Brightness.dark),
       scaffoldMessengerKey: messengerKey,
-      builder: (context, child) => AppGate(child: child!),
+      builder: (context, child) => Consumer(
+        builder: (context, ref, _) {
+          final settings = ref.watch(settingsProvider);
+          final revealed = ref.watch(amountsRevealedProvider);
+          return MoneyScope(
+            currency: settings.currency,
+            hidden: settings.hideAmounts && !revealed,
+            child: AppGate(child: child!),
+          );
+        },
+      ),
       home: const AppShell(),
     );
   }

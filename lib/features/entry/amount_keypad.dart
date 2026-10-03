@@ -6,10 +6,18 @@ import '../../util/money.dart';
 /// Calculator-style keypad. Emits digits, '.', or [backspaceKey].
 /// Long-pressing backspace emits [onClear].
 class AmountKeypad extends StatelessWidget {
-  const AmountKeypad({super.key, required this.onKey, required this.onClear});
+  const AmountKeypad({
+    super.key,
+    required this.onKey,
+    required this.onClear,
+    this.allowDecimal = true,
+  });
 
   final ValueChanged<String> onKey;
   final VoidCallback onClear;
+
+  /// False for currencies without decimals; the point key is then blank.
+  final bool allowDecimal;
 
   static const _rows = [
     ['1', '2', '3'],
@@ -30,19 +38,21 @@ class AmountKeypad extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(4),
-                    child: _Key(
-                      keyValue: key,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        onKey(key);
-                      },
-                      onLongPress: key == backspaceKey
-                          ? () {
-                              HapticFeedback.mediumImpact();
-                              onClear();
-                            }
-                          : null,
-                    ),
+                    child: key == '.' && !allowDecimal
+                        ? const SizedBox(height: 58)
+                        : _Key(
+                            keyValue: key,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              onKey(key);
+                            },
+                            onLongPress: key == backspaceKey
+                                ? () {
+                                    HapticFeedback.mediumImpact();
+                                    onClear();
+                                  }
+                                : null,
+                          ),
                   ),
                 ),
             ],

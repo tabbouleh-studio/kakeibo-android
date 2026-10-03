@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import '../../models/currency.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
 import '../../widgets/money_field.dart';
@@ -52,10 +53,10 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
   void _fill(PlanData? plan) {
     setState(() {
       if (plan != null) {
-        _income.text = filsToInput(plan.incomeFils);
-        _savings.text = filsToInput(plan.savingsGoalFils);
+        _income.text = filsToInput(plan.incomeFils, currency: _currency);
+        _savings.text = filsToInput(plan.savingsGoalFils, currency: _currency);
         for (final c in plan.fixedCosts) {
-          _costs.add(_CostRow(c.name, filsToInput(c.amountFils)));
+          _costs.add(_CostRow(c.name, filsToInput(c.amountFils, currency: _currency)));
         }
       }
       _loading = false;
@@ -72,7 +73,9 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
     super.dispose();
   }
 
-  int _fils(TextEditingController c) => parseFils(c.text) ?? 0;
+  Currency get _currency => ref.read(settingsProvider).currency;
+
+  int _fils(TextEditingController c) => parseFils(c.text, currency: _currency) ?? 0;
 
   int get _fixedTotal => _costs.fold<int>(0, (sum, c) => sum + _fils(c.amount));
 
@@ -81,7 +84,9 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
   String? _validateAmount(String? value, {bool required = true}) {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return required ? 'Required' : null;
-    return parseFils(text) == null ? 'Enter an amount like 12.750' : null;
+    return parseFils(text, currency: _currency) == null
+        ? 'Enter an amount like ${exampleAmount(_currency)}'
+        : null;
   }
 
   Future<void> _save() async {

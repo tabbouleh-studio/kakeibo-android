@@ -11,6 +11,7 @@ import '../../util/period.dart';
 import '../../widgets/money_text.dart';
 import '../entry/entry_screen.dart';
 import 'delete_entry.dart';
+import '../../widgets/money_scope.dart';
 
 class LedgerScreen extends ConsumerStatefulWidget {
   const LedgerScreen({super.key});
@@ -97,12 +98,12 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                     if (!_hidden.contains(e.id)) e,
                 ];
                 if (_searching && query.isEmpty) {
-                  return const _EmptyState(
+                  return _EmptyState(
                     icon: Icons.search_rounded,
                     title: 'Search all months',
                     message:
                         'Try a note like “coffee”, a category like “Culture”, '
-                        'or an amount like 2.5',
+                        'or an amount like ${exampleAmount(context.currency)}',
                   );
                 }
                 if (visible.isEmpty) {
@@ -162,7 +163,7 @@ class _MonthSwitcher extends ConsumerWidget {
                     Text(formatPeriod(period), style: theme.textTheme.titleMedium),
                     const SizedBox(height: 2),
                     Text(
-                      '${formatFils(total)} · ${entries.length} '
+                      '${context.money(total)} · ${entries.length} '
                       '${entries.length == 1 ? 'entry' : 'entries'}',
                       style: moneyStyle(theme.textTheme.bodySmall)
                           .copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -221,7 +222,7 @@ class _EntryList extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      formatFils(group.totalFils),
+                      context.money(group.totalFils),
                       style: moneyStyle(theme.textTheme.bodySmall)
                           .copyWith(color: theme.colorScheme.onSurfaceVariant),
                     ),

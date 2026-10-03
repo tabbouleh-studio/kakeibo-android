@@ -1,38 +1,62 @@
 import 'package:intl/intl.dart';
 
-/// 1 KWD = 1,000 fils. All money in the app is an `int` number of fils.
+import '../models/currency.dart';
+
+/// All money is an `int` number of thousandths of the main unit: fils for
+/// KWD (1 KWD = 1,000 fils). Other currencies use the same unit, shown with
+/// their own number of decimals.
 const filsPerDinar = 1000;
 
-/// Largest amount accepted from user input (999,999,999.999 KWD).
+/// Largest amount accepted from user input (999,999,999.999).
 const maxInputFils = 999999999999;
 
 final _grouping = NumberFormat('#,##0', 'en_US');
 
-/// Formats fils for display: 12750 -> "KD 12.750", 1234500 -> "KD 1,234.500".
-String formatFils(int fils, {bool withSymbol = true}) {
-  final abs = fils.abs();
-  final dinars = _grouping.format(abs ~/ filsPerDinar);
-  final rest = (abs % filsPerDinar).toString().padLeft(3, '0');
-  final number = withSymbol ? 'KD $dinars.$rest' : '$dinars.$rest';
-  return fils < 0 ? '-$number' : number;
+int _pow10(int n) => n == 0 ? 1 : 10 * _pow10(n - 1);
+
+/// Formats for display: 12750 -> "KD 12.750", 1234500 -> "KD 1,234.500".
+/// Currencies with fewer decimals round half up: 12755 in USD -> "\$ 12.76".
+String formatFils(int fils, {Currency currency = Currency.kwd, bool withSymbol = true}) {
+  final step = _pow10(3 - currency.decimals);
+  final units = (fils.abs() + step ~/ 2) ~/ step;
+  final scale = _pow10(currency.decimals);
+  final whole = _grouping.format(units ~/ scale);
+  final number = currency.decimals == 0
+      ? whole
+      : '$whole.${(units % scale).toString().padLeft(currency.decimals, '0')}';
+  final text = withSymbol ? '${currency.symbol} $number' : number;
+  return fils < 0 && units > 0 ? '-$text' : text;
 }
 
-/// Formats fils for an editable text field: 12750 -> "12.750", no grouping.
-String filsToInput(int fils) => formatFils(fils, withSymbol: false).replaceAll(',', '');
+/// Formats for an editable text field: 12750 -> "12.750", no grouping.
+String filsToInput(int fils, {Currency currency = Currency.kwd}) =>
+    formatFils(fils, currency: currency, withSymbol: false).replaceAll(',', '');
 
-final _amountPattern = RegExp(r'^(\d*)(?:\.(\d{0,3}))?$');
+/// A sample amount for hints and error messages: "12.750", "12.50" or "1250".
+String exampleAmount(Currency currency) => switch (currency.decimals) {
+  0 => '1250',
+  2 => '12.50',
+  _ => '12.750',
+};
 
 /// Parses user input into fils. Accepts "12.75", "12.750", ".5", "1,234.5",
-/// "KD 12" and Arabic-Indic digits. Returns null for anything invalid,
-/// negative, or with more than 3 decimal places.
-int? parseFils(String input) {
+/// a leading currency code or symbol ("KD 12"), and Arabic-Indic digits.
+/// Returns null for anything invalid, negative, or with more decimals than
+/// [currency] allows.
+int? parseFils(String input, {Currency currency = Currency.kwd}) {
   var s = _normalizeDigits(input).replaceAll(RegExp(r'[\s,]'), '');
-  if (s.toUpperCase().startsWith('KD')) s = s.substring(2);
-  final match = _amountPattern.firstMatch(s);
+  for (final prefix in {currency.code, currency.symbol.replaceAll(' ', '')}) {
+    if (s.toUpperCase().startsWith(prefix.toUpperCase())) {
+      s = s.substring(prefix.length);
+      break;
+    }
+  }
+  final match = RegExp('^(\\d*)(?:\\.(\\d{0,${currency.decimals}}))?\$').firstMatch(s);
   if (match == null) return null;
   final whole = match.group(1)!;
   final frac = match.group(2) ?? '';
   if (whole.isEmpty && frac.isEmpty) return null;
+  if (currency.decimals == 0 && s.contains('.')) return null;
   if (whole.length > 9) return null;
   final fils =
       int.parse(whole.isEmpty ? '0' : whole) * filsPerDinar + int.parse(frac.padRight(3, '0'));
@@ -61,19 +85,19 @@ String _normalizeDigits(String s) {
 const backspaceKey = 'back';
 
 /// Applies one keypad press to the typed amount text. Keeps the text valid:
-/// one decimal point, at most 3 decimals, no leading zeros, bounded length.
-String applyAmountKey(String current, String key) {
+/// one decimal point, at most [decimals] decimals, no leading zeros, bounded length.
+String applyAmountKey(String current, String key, {int decimals = 3}) {
   if (key == backspaceKey) {
     return current.isEmpty ? current : current.substring(0, current.length - 1);
   }
   if (key == '.') {
-    if (current.contains('.')) return current;
+    if (decimals == 0 || current.contains('.')) return current;
     return current.isEmpty ? '0.' : '$current.';
   }
   if (!RegExp(r'^\d$').hasMatch(key)) return current;
   final dot = current.indexOf('.');
   if (dot >= 0) {
-    if (current.length - dot - 1 >= 3) return current;
+    if (current.length - dot - 1 >= decimals) return current;
   } else {
     if (current == '0') return key;
     if (current.length >= 9) return current;

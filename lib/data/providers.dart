@@ -30,6 +30,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
       monthStartDay: prefs.getInt(AppSettings.monthStartDayKey) ?? 1,
       weekStartDay: prefs.getInt(AppSettings.weekStartDayKey) ?? DateTime.sunday,
       lockEnabled: prefs.getBool(AppSettings.lockEnabledKey) ?? false,
+      currencyCode: prefs.getString(AppSettings.currencyKey) ?? 'KWD',
+      hideAmounts: prefs.getBool(AppSettings.hideAmountsKey) ?? false,
       lastBackupAt: backupMillis == null ? null : DateTime.fromMillisecondsSinceEpoch(backupMillis),
     );
   }
@@ -49,6 +51,16 @@ class SettingsNotifier extends Notifier<AppSettings> {
     state = state.copyWith(lockEnabled: enabled);
   }
 
+  Future<void> setCurrency(String code) async {
+    await _prefs.setString(AppSettings.currencyKey, code);
+    state = state.copyWith(currencyCode: code);
+  }
+
+  Future<void> setHideAmounts(bool hide) async {
+    await _prefs.setBool(AppSettings.hideAmountsKey, hide);
+    state = state.copyWith(hideAmounts: hide);
+  }
+
   Future<void> setLastBackupAt(DateTime time) async {
     await _prefs.setInt(AppSettings.lastBackupAtKey, time.millisecondsSinceEpoch);
     state = state.copyWith(lastBackupAt: time);
@@ -58,6 +70,8 @@ class SettingsNotifier extends Notifier<AppSettings> {
     await setMonthStartDay(s.monthStartDay);
     await setWeekStartDay(s.weekStartDay);
     await setLockEnabled(s.lockEnabled);
+    await setCurrency(s.currencyCode);
+    await setHideAmounts(s.hideAmounts);
   }
 }
 
@@ -136,7 +150,8 @@ final ledgerSearchProvider = NotifierProvider<LedgerSearchNotifier, String>(
 final searchResultsProvider = StreamProvider<List<Entry>>((ref) {
   final query = ref.watch(ledgerSearchProvider).trim();
   if (query.isEmpty) return Stream.value(const []);
-  return ref.watch(databaseProvider).searchEntries(query);
+  final currency = ref.watch(settingsProvider.select((s) => s.currency));
+  return ref.watch(databaseProvider).searchEntries(query, currency: currency);
 });
 
 /// True when the backup banner should show: never backed up, or more than
@@ -161,4 +176,19 @@ final reflectionsProvider = StreamProvider.family<List<Reflection>, ReflectionTy
 
 final recurringItemsProvider = StreamProvider<List<RecurringItem>>(
   (ref) => ref.watch(databaseProvider).watchRecurringItems(),
+);
+
+/// Amounts are temporarily revealed while the privacy mask is on. Resets when
+/// the app goes to the background.
+class AmountsRevealedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+
+  void reset() => state = false;
+}
+
+final amountsRevealedProvider = NotifierProvider<AmountsRevealedNotifier, bool>(
+  AmountsRevealedNotifier.new,
 );

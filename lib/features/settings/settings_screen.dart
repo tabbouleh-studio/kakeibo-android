@@ -5,12 +5,13 @@ import 'package:local_auth/local_auth.dart';
 
 import '../../data/providers.dart';
 import '../../models/app_settings.dart';
-import '../../util/money.dart';
 import '../../util/period.dart';
 import '../lock/app_gate.dart';
 import 'backup_actions.dart';
+import 'currency_screen.dart';
 import 'month_setup_screen.dart';
 import 'recurring_screen.dart';
+import '../../widgets/money_scope.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -35,7 +36,7 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'This month’s plan',
                 subtitle: summary == null || !summary.hasPlan
                     ? 'Not set yet'
-                    : 'Spendable ${formatFils(summary.spendableFils)}',
+                    : 'Spendable ${context.money(summary.spendableFils)}',
                 onTap: () =>
                     Navigator.of(context)
                         .push(MaterialPageRoute(builder: (_) => const MonthSetupScreen())),
@@ -57,6 +58,14 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () =>
                     Navigator.of(context)
                         .push(MaterialPageRoute(builder: (_) => const RecurringScreen())),
+              ),
+              _Tile(
+                icon: Icons.payments_outlined,
+                title: 'Currency',
+                subtitle: '${settings.currency.name} (${settings.currency.code})',
+                onTap: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const CurrencyScreen())),
               ),
               _Tile(
                 icon: Icons.view_week_outlined,
@@ -82,6 +91,20 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 value: settings.lockEnabled,
                 onChanged: (on) => _setLock(context, ref, on),
+              ),
+              SwitchListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                secondary: const _IconBox(icon: Icons.visibility_off_outlined),
+                title: Text('Hide amounts', style: theme.textTheme.titleSmall),
+                subtitle: Text(
+                  'Show •••• instead of numbers. Tap the eye on Home to peek; '
+                  'they hide again when you leave the app',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: settings.hideAmounts,
+                onChanged: ref.read(settingsProvider.notifier).setHideAmounts,
               ),
             ],
           ),

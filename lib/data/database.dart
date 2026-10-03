@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import '../models/currency.dart';
 import '../models/enums.dart';
 import '../models/recurring.dart';
 import '../util/money.dart';
@@ -77,14 +78,14 @@ class AppDatabase extends _$AppDatabase {
 
   /// All entries whose note contains [query], whose category starts with it,
   /// or whose amount equals it (e.g. "2.5"). Newest first.
-  Stream<List<Entry>> searchEntries(String query) {
+  Stream<List<Entry>> searchEntries(String query, {Currency currency = Currency.kwd}) {
     final q = query.trim();
     final lower = q.toLowerCase();
     final categories = [
       for (final c in SpendCategory.values)
         if (c.label.toLowerCase().startsWith(lower)) c.name,
     ];
-    final fils = parseFils(q);
+    final fils = parseFils(q, currency: currency);
     final escaped = q.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
     final statement = select(entries)
       ..where((e) {

@@ -61,6 +61,8 @@ class _AppGateState extends ConsumerState<AppGate> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.hidden || AppLifecycleState.paused:
         _backgroundedAt ??= DateTime.now();
+        // The privacy mask comes back on whenever the app is put away.
+        ref.read(amountsRevealedProvider.notifier).reset();
       case AppLifecycleState.resumed:
         final away = _backgroundedAt == null
             ? Duration.zero

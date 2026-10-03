@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kakeibo/data/backup.dart';
 import 'package:kakeibo/data/csv_export.dart';
 import 'package:kakeibo/data/database.dart';
+import 'package:kakeibo/models/currency.dart';
 import 'package:kakeibo/models/enums.dart';
 
 AppDatabase memoryDb() =>
@@ -15,6 +16,8 @@ const settings = BackupSettings(
   monthStartDay: 25,
   weekStartDay: DateTime.saturday,
   lockEnabled: true,
+  currencyCode: 'USD',
+  hideAmounts: true,
 );
 
 Future<void> fill(AppDatabase db) async {
@@ -87,6 +90,8 @@ void main() {
     expect(parsed.settings.monthStartDay, 25);
     expect(parsed.settings.weekStartDay, DateTime.saturday);
     expect(parsed.settings.lockEnabled, isTrue);
+    expect(parsed.settings.currencyCode, 'USD');
+    expect(parsed.settings.hideAmounts, isTrue);
     expect(parsed.entries.first.date, DateTime(2026, 10, 1));
 
     // Restored data behaves like normal data.
@@ -146,6 +151,15 @@ void main() {
       'bad month start',
       () => rejects((j) => j['settings']['monthStartDay'] = 32, 'monthStartDay'),
     );
+    test('unknown currency', () => rejects((j) => j['settings']['currency'] = 'XXX', 'currency'));
+    test('older backup without currency defaults to KWD', () {
+      final j = jsonDecode(jsonEncode(valid)) as Map<String, dynamic>;
+      (j['settings'] as Map).remove('currency');
+      (j['settings'] as Map).remove('hideAmounts');
+      final parsed = BackupData.decode(jsonEncode(j));
+      expect(parsed.settings.currencyCode, 'KWD');
+      expect(parsed.settings.hideAmounts, isFalse);
+    });
     test('bad week start', () => rejects((j) => j['settings']['weekStartDay'] = 3, 'weekStartDay'));
     test(
       'duplicate entry ids',
@@ -187,6 +201,23 @@ void main() {
       '2026-10-01,Needs,12.750,"Groceries, Lulu"',
       '2026-10-02,Culture,1234.500,"Course ""Dart"""',
       '',
+    ]);
+  });
+
+  test('CSV uses the app currency', () {
+    final bytes = entriesToCsv([
+      Entry(
+        id: 1,
+        amountFils: 12750,
+        category: SpendCategory.wants,
+        note: '',
+        date: DateTime(2026, 10, 1),
+        createdAt: DateTime(2026, 10, 1),
+      ),
+    ], currency: Currency.byCode('USD'));
+    expect(utf8.decode(bytes.sublist(3)).split('\r\n').take(2), [
+      'Date,Category,Amount (USD),Note',
+      '2026-10-01,Wants,12.75,',
     ]);
   });
 }

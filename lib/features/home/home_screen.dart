@@ -6,12 +6,12 @@ import '../../data/providers.dart';
 import '../../models/budget_summary.dart';
 import '../../models/enums.dart';
 import '../../theme.dart';
-import '../../util/money.dart';
 import '../../util/period.dart';
 import '../../widgets/money_text.dart';
 import '../settings/backup_actions.dart';
 import '../settings/month_setup_screen.dart';
 import 'progress_widgets.dart';
+import '../../widgets/money_scope.dart';
 
 void _open(BuildContext context, Widget screen) =>
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
@@ -75,7 +75,7 @@ class _HomeBody extends ConsumerWidget {
             const Spacer(),
             if (summary.spentFils > 0)
               Text(
-                '${formatFils(summary.spentFils)} spent',
+                '${context.money(summary.spentFils)} spent',
                 style: moneyStyle(theme.textTheme.bodyMedium)
                     .copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
@@ -98,11 +98,12 @@ class _HomeBody extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final masking = ref.watch(settingsProvider.select((s) => s.hideAmounts));
     final theme = Theme.of(context);
     return Row(
       children: [
@@ -121,6 +122,18 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
+        if (masking)
+          IconButton.filledTonal(
+            tooltip: context.amountsHidden ? 'Show amounts' : 'Hide amounts',
+            style: IconButton.styleFrom(
+              backgroundColor: theme.colorScheme.surfaceContainerHigh,
+              foregroundColor: theme.colorScheme.onSurface,
+            ),
+            icon: Icon(
+              context.amountsHidden ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+            ),
+            onPressed: ref.read(amountsRevealedProvider.notifier).toggle,
+          ),
       ],
     );
   }
@@ -231,7 +244,7 @@ class _HeroCard extends StatelessWidget {
           Text(
             over
                 ? 'Spent more than planned, with $daysLeft ${_days(daysLeft)} to go'
-                : 'About ${formatFils(summary.leftFils ~/ daysLeft)} a day · '
+                : 'About ${context.money(summary.leftFils ~/ daysLeft)} a day · '
                       '$daysLeft ${_days(daysLeft)} left',
             style: moneyStyle(theme.textTheme.bodyMedium).copyWith(color: soft),
           ),
@@ -256,12 +269,12 @@ class _HeroCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Spent ${formatFils(summary.spentFils)}',
+                'Spent ${context.money(summary.spentFils)}',
                 style: moneyStyle(theme.textTheme.bodySmall).copyWith(color: soft),
               ),
               const Spacer(),
               Text(
-                'of ${formatFils(spendable)}',
+                'of ${context.money(spendable)}',
                 style: moneyStyle(theme.textTheme.bodySmall).copyWith(color: soft),
               ),
             ],
@@ -353,7 +366,7 @@ class _StartCard extends StatelessWidget {
             const SizedBox(height: 12),
             Center(
               child: Text(
-                '${formatFils(spentFils)} spent so far',
+                '${context.money(spentFils)} spent so far',
                 style: moneyStyle(theme.textTheme.bodySmall).copyWith(color: soft),
               ),
             ),
@@ -402,7 +415,7 @@ class _SavingsCard extends StatelessWidget {
                       MoneyText(summary.savedFils, size: 22),
                       Flexible(
                         child: Text(
-                          '  of ${formatFils(summary.savingsGoalFils)}',
+                          '  of ${context.money(summary.savingsGoalFils)}',
                           overflow: TextOverflow.ellipsis,
                           style: moneyStyle(theme.textTheme.bodySmall).copyWith(color: muted),
                         ),
@@ -414,7 +427,7 @@ class _SavingsCard extends StatelessWidget {
                     !eaten
                         ? 'On track, stay within budget'
                         : summary.overBudgetFils > 0
-                        ? 'Savings used up, plus ${formatFils(summary.overBudgetFils)} over'
+                        ? 'Savings used up, plus ${context.money(summary.overBudgetFils)} over'
                         : 'Overspending is eating into your savings',
                     style: theme.textTheme.bodySmall?.copyWith(color: eaten ? color : muted),
                   ),

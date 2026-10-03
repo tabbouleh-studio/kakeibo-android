@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../models/currency.dart';
 import '../models/enums.dart';
 import '../util/money.dart';
 import 'database.dart';
@@ -25,11 +26,15 @@ class BackupSettings {
     required this.monthStartDay,
     required this.weekStartDay,
     required this.lockEnabled,
+    this.currencyCode = 'KWD',
+    this.hideAmounts = false,
   });
 
   final int monthStartDay;
   final int weekStartDay;
   final bool lockEnabled;
+  final String currencyCode;
+  final bool hideAmounts;
 }
 
 /// Everything the app stores, as written to / read from a backup file.
@@ -62,6 +67,8 @@ class BackupData {
       'monthStartDay': settings.monthStartDay,
       'weekStartDay': settings.weekStartDay,
       'lockEnabled': settings.lockEnabled,
+      'currency': settings.currencyCode,
+      'hideAmounts': settings.hideAmounts,
     },
     'entries': [
       for (final e in entries)
@@ -149,7 +156,13 @@ class BackupData {
       monthStartDay: s.integer('monthStartDay', min: 1, max: 31),
       weekStartDay: s.integer('weekStartDay', min: 1, max: 7),
       lockEnabled: s.boolean('lockEnabled'),
+      // Added later in version 1; older backups were always KWD.
+      currencyCode: s.map['currency'] == null ? 'KWD' : s.text('currency'),
+      hideAmounts: s.map['hideAmounts'] == null ? false : s.boolean('hideAmounts'),
     );
+    if (!Currency.isKnown(settings.currencyCode)) {
+      throw BackupFormatException('Unknown currency "${settings.currencyCode}" in backup.');
+    }
     if (!const {
       DateTime.sunday,
       DateTime.saturday,

@@ -6,11 +6,11 @@ import '../../data/providers.dart';
 import '../../models/enums.dart';
 import '../../models/reflection_numbers.dart';
 import '../../theme.dart';
-import '../../util/money.dart';
 import '../../util/period.dart';
 import '../../widgets/money_text.dart';
 import '../home/progress_widgets.dart';
 import 'reflection_screen.dart';
+import '../../widgets/money_scope.dart';
 
 /// The four Kakeibo questions for one week or month.
 class ReflectionFormScreen extends ConsumerStatefulWidget {
@@ -227,10 +227,10 @@ class _ReflectionFormScreenState extends ConsumerState<ReflectionFormScreen> {
   Widget _savedLine(ThemeData theme, ReflectionNumbers n) {
     final left = n.leftFils;
     final text = left >= 0
-        ? 'On track: ${formatFils(n.saveFils)} saved, ${formatFils(left)} unspent on top'
+        ? 'On track: ${context.money(n.saveFils)} saved, ${context.money(left)} unspent on top'
         : left.abs() >= n.saveFils
-        ? 'Savings used up, ${formatFils(left.abs() - n.saveFils)} over'
-        : 'Saved ${formatFils(n.saveFils + left)} of ${formatFils(n.saveFils)}';
+        ? 'Savings used up, ${context.money(left.abs() - n.saveFils)} over'
+        : 'Saved ${context.money(n.saveFils + left)} of ${context.money(n.saveFils)}';
     return Text(
       text,
       style: moneyStyle(theme.textTheme.bodySmall)
@@ -367,7 +367,7 @@ class _Breakdown extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    formatFils(numbers.spentByCategory[c]!),
+                    context.money(numbers.spentByCategory[c]!),
                     style: moneyStyle(theme.textTheme.bodySmall),
                   ),
                 ],

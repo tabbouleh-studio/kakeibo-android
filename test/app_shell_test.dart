@@ -48,14 +48,14 @@ void main() {
 
     await tester.tap(find.text('Settings').last);
     await settle(tester);
-    expect(find.text('App lock'), findsOneWidget);
+    expect(find.text('Month starts on'), findsOneWidget);
 
     await tester.tap(find.text('Add'));
     await settle(tester);
     expect(find.text('New expense'), findsOneWidget);
     await tester.tap(find.byTooltip('Close'));
     await settle(tester);
-    expect(find.text('App lock'), findsOneWidget);
+    expect(find.text('Month starts on'), findsOneWidget);
 
     // System back from a tab goes to Home first.
     await tester.binding.handlePopRoute();

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import '../../models/currency.dart';
 import '../../models/enums.dart';
+import '../../widgets/money_scope.dart';
 import '../../theme.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
@@ -38,7 +40,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
   void initState() {
     super.initState();
     if (widget.entry case final e?) {
-      _amountText = filsToInput(e.amountFils);
+      _amountText = filsToInput(e.amountFils, currency: _currency);
       _replaceOnType = true;
       _category = e.category;
       _date = e.date;
@@ -46,7 +48,9 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
     }
   }
 
-  int get _amountFils => parseFils(_amountText) ?? 0;
+  Currency get _currency => ref.read(settingsProvider).currency;
+
+  int get _amountFils => parseFils(_amountText, currency: _currency) ?? 0;
   bool get _canSave => _amountFils > 0 && _category != null && !_saving;
 
   @override
@@ -73,6 +77,9 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
     final navigator = Navigator.of(context);
     final category = _category!;
     final amount = _amountFils;
+    final message = _editing
+        ? 'Updated ${context.money(amount)} · ${category.label}'
+        : 'Saved ${context.money(amount)} to ${category.label}';
     final db = ref.read(databaseProvider);
     if (widget.entry case final e?) {
       await db.updateEntry(
@@ -84,15 +91,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
     navigator.pop();
     messenger
       ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            _editing
-                ? 'Updated ${formatFils(amount)} · ${category.label}'
-                : 'Saved ${formatFils(amount)} to ${category.label}',
-          ),
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _delete() {
@@ -104,7 +103,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
   String get _saveLabel {
     if (_amountFils == 0) return 'Enter an amount';
     if (_category == null) return 'Choose a category';
-    return _editing ? 'Save changes' : 'Save ${formatFils(_amountFils)}';
+    return _editing ? 'Save changes' : 'Save ${formatFils(_amountFils, currency: _currency)}';
   }
 
   @override
@@ -187,10 +186,11 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
                       ),
                       const SizedBox(height: 8),
                       AmountKeypad(
+                        allowDecimal: _currency.decimals > 0,
                         onKey: (key) => setState(() {
                           final start = _replaceOnType && key != backspaceKey ? '' : _amountText;
                           _replaceOnType = false;
-                          _amountText = applyAmountKey(start, key);
+                          _amountText = applyAmountKey(start, key, decimals: _currency.decimals);
                         }),
                         onClear: () => setState(() => _amountText = ''),
                       ),
@@ -228,16 +228,17 @@ class _AmountDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final currency = context.currency;
     final ink = theme.colorScheme.onSurface;
     final faint = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
     final dot = text.indexOf('.');
     final whole = text.isEmpty ? '0' : (dot < 0 ? text : text.substring(0, dot));
-    final typedFils = dot < 0 ? '' : text.substring(dot + 1);
-    final pendingFils = '000'.substring(typedFils.length);
+    final typedFraction = dot < 0 ? '' : text.substring(dot + 1);
+    final pendingFraction = '0' * (currency.decimals - typedFraction.length);
     final style = moneyStyle(
       const TextStyle(fontSize: 64, fontWeight: FontWeight.w600, height: 1.1),
     ).copyWith(color: text.isEmpty ? faint : ink, letterSpacing: -1.5);
-    final small = TextStyle(fontSize: 34, letterSpacing: 0);
+    const small = TextStyle(fontSize: 34, letterSpacing: 0);
 
     return FittedBox(
       fit: BoxFit.scaleDown,
@@ -246,7 +247,7 @@ class _AmountDisplay extends StatelessWidget {
           style: style,
           children: [
             TextSpan(
-              text: 'KD ',
+              text: '${currency.symbol} ',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
@@ -255,18 +256,21 @@ class _AmountDisplay extends StatelessWidget {
               ),
             ),
             TextSpan(text: whole),
-            TextSpan(
-              text: '.',
-              style: small.copyWith(color: dot < 0 ? faint : null),
-            ),
-            TextSpan(text: typedFils, style: small),
-            TextSpan(
-              text: pendingFils,
-              style: small.copyWith(color: faint),
-            ),
+            if (currency.decimals > 0) ...[
+              TextSpan(
+                text: '.',
+                style: small.copyWith(color: dot < 0 ? faint : null),
+              ),
+              TextSpan(text: typedFraction, style: small),
+              TextSpan(
+                text: pendingFraction,
+                style: small.copyWith(color: faint),
+              ),
+            ],
           ],
         ),
-        semanticsLabel: 'Amount ${formatFils(parseFils(text) ?? 0)}',
+        semanticsLabel:
+            'Amount ${formatFils(parseFils(text, currency: currency) ?? 0, currency: currency)}',
       ),
     );
   }

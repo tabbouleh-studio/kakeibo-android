@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database.dart';
 import '../../data/providers.dart';
+import '../../models/currency.dart';
 import '../../models/enums.dart';
 import '../../theme.dart';
 import '../../util/money.dart';
@@ -133,12 +134,14 @@ class _RecurringFormScreenState extends ConsumerState<RecurringFormScreen> {
   DateTime _nextDue = dateOnly(DateTime.now());
   bool _active = true;
 
+  Currency get _currency => ref.read(settingsProvider).currency;
+
   @override
   void initState() {
     super.initState();
     if (widget.item case final item?) {
       _name.text = item.name;
-      _amount.text = filsToInput(item.amountFils);
+      _amount.text = filsToInput(item.amountFils, currency: _currency);
       _category = item.category;
       _frequency = item.frequency;
       _nextDue = item.nextDueDate;
@@ -172,7 +175,7 @@ class _RecurringFormScreenState extends ConsumerState<RecurringFormScreen> {
       RecurringItemsCompanion(
         id: widget.item == null ? const Value.absent() : Value(widget.item!.id),
         name: Value(_name.text.trim()),
-        amountFils: Value(parseFils(_amount.text)!),
+        amountFils: Value(parseFils(_amount.text, currency: _currency)!),
         category: Value(_category),
         frequency: Value(_frequency),
         nextDueDate: Value(_nextDue),
@@ -235,7 +238,9 @@ class _RecurringFormScreenState extends ConsumerState<RecurringFormScreen> {
             MoneyField(
               controller: _amount,
               label: 'Amount',
-              validator: (v) => (parseFils(v ?? '') ?? 0) > 0 ? null : 'Enter an amount like 3.500',
+              validator: (v) => (parseFils(v ?? '', currency: _currency) ?? 0) > 0
+                  ? null
+                  : 'Enter an amount like ${exampleAmount(_currency)}',
             ),
             const SizedBox(height: 20),
             Text('Category', style: theme.textTheme.titleSmall),
