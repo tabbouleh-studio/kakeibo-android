@@ -86,4 +86,60 @@ void main() {
     expect(entries.single.note, 'coffee');
     expect(entries.single.category, SpendCategory.wants);
   });
+
+  test('update, delete and restore with the same id', () async {
+    final id = await db.addEntry(
+      amountFils: 2500,
+      category: SpendCategory.wants,
+      date: DateTime(2026, 10, 1),
+    );
+    final entry = (await db.watchEntries(sep, oct).first).single;
+
+    await db.updateEntry(
+      entry.copyWith(amountFils: 3000, note: ' lunch ', date: DateTime(2026, 10, 2, 13)),
+    );
+    final updated = (await db.watchEntries(sep, oct).first).single;
+    expect(updated.amountFils, 3000);
+    expect(updated.note, 'lunch');
+    expect(updated.date, DateTime(2026, 10, 2));
+
+    await db.deleteEntry(id);
+    expect(await db.watchEntries(sep, oct).first, isEmpty);
+
+    await db.restoreEntry(updated);
+    final restored = (await db.watchEntries(sep, oct).first).single;
+    expect(restored.id, id);
+    expect(restored.note, 'lunch');
+  });
+
+  test('search matches notes, categories and amounts across months', () async {
+    await db.addEntry(
+      amountFils: 1250,
+      category: SpendCategory.wants,
+      date: DateTime(2026, 8, 1),
+      note: 'Coffee beans',
+    );
+    await db.addEntry(
+      amountFils: 12000,
+      category: SpendCategory.culture,
+      date: DateTime(2026, 10, 1),
+      note: 'Book',
+    );
+    await db.addEntry(
+      amountFils: 2500,
+      category: SpendCategory.needs,
+      date: DateTime(2026, 10, 2),
+      note: '100% juice',
+    );
+
+    Future<List<String>> notes(String q) async => [
+      for (final e in await db.searchEntries(q).first) e.note,
+    ];
+
+    expect(await notes('coffee'), ['Coffee beans']);
+    expect(await notes('cult'), ['Book']);
+    expect(await notes('2.5'), ['100% juice']);
+    expect(await notes('%'), ['100% juice']);
+    expect(await notes('zzz'), isEmpty);
+  });
 }

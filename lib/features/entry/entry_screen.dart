@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../models/enums.dart';
 import '../../theme.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
+import '../ledger/delete_entry.dart';
 import 'amount_keypad.dart';
 
 /// Quick entry: type the amount, tap a category, tap Save.
+/// With [entry], edits that entry instead.
 class EntryScreen extends ConsumerStatefulWidget {
-  const EntryScreen({super.key});
+  const EntryScreen({super.key, this.entry});
+
+  final Entry? entry;
 
   @override
   ConsumerState<EntryScreen> createState() => _EntryScreenState();
@@ -24,6 +28,23 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
   DateTime _date = dateOnly(DateTime.now());
   final _note = TextEditingController();
   bool _saving = false;
+
+  /// When editing, the first digit typed replaces the old amount.
+  bool _replaceOnType = false;
+
+  bool get _editing => widget.entry != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.entry case final e?) {
+      _amountText = filsToInput(e.amountFils);
+      _replaceOnType = true;
+      _category = e.category;
+      _date = e.date;
+      _note.text = e.note;
+    }
+  }
 
   int get _amountFils => parseFils(_amountText) ?? 0;
   bool get _canSave => _amountFils > 0 && _category != null && !_saving;
@@ -39,7 +60,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
     final picked = await showDatePicker(
       context: context,
       initialDate: _date,
-      firstDate: DateTime(today.year - 5),
+      firstDate: DateTime(2000),
       lastDate: today,
     );
     if (picked != null) setState(() => _date = picked);
@@ -52,26 +73,38 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
     final navigator = Navigator.of(context);
     final category = _category!;
     final amount = _amountFils;
-    await ref
-        .read(databaseProvider)
-        .addEntry(amountFils: amount, category: category, date: _date, note: _note.text);
+    final db = ref.read(databaseProvider);
+    if (widget.entry case final e?) {
+      await db.updateEntry(
+        e.copyWith(amountFils: amount, category: category, date: _date, note: _note.text),
+      );
+    } else {
+      await db.addEntry(amountFils: amount, category: category, date: _date, note: _note.text);
+    }
     navigator.pop();
-    messenger.showSnackBar(
-      SnackBar(content: Text('Saved ${formatFils(amount)} to ${category.label}')),
-    );
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            _editing
+                ? 'Updated ${formatFils(amount)} · ${category.label}'
+                : 'Saved ${formatFils(amount)} to ${category.label}',
+          ),
+        ),
+      );
   }
 
-  String _dateLabel() {
-    final diff = daysBetween(_date, DateTime.now());
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Yesterday';
-    return DateFormat('EEE d MMM').format(_date);
+  void _delete() {
+    final navigator = Navigator.of(context);
+    deleteWithUndo(context, ref, widget.entry!);
+    navigator.pop();
   }
 
   String get _saveLabel {
     if (_amountFils == 0) return 'Enter an amount';
     if (_category == null) return 'Choose a category';
-    return 'Save ${formatFils(_amountFils)}';
+    return _editing ? 'Save changes' : 'Save ${formatFils(_amountFils)}';
   }
 
   @override
@@ -85,7 +118,15 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
           icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('New expense'),
+        title: Text(_editing ? 'Edit expense' : 'New expense'),
+        actions: [
+          if (_editing)
+            IconButton(
+              tooltip: 'Delete',
+              icon: const Icon(Icons.delete_outline_rounded),
+              onPressed: _delete,
+            ),
+        ],
       ),
       body: SafeArea(
         child: LayoutBuilder(
@@ -105,7 +146,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
                             const SizedBox(height: 14),
                             ActionChip(
                               avatar: const Icon(Icons.calendar_today_rounded, size: 16),
-                              label: Text(_dateLabel()),
+                              label: Text(formatDay(_date)),
                               onPressed: _pickDate,
                               side: BorderSide.none,
                               backgroundColor: theme.colorScheme.surfaceContainerHigh,
@@ -146,8 +187,11 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
                       ),
                       const SizedBox(height: 8),
                       AmountKeypad(
-                        onKey: (key) =>
-                            setState(() => _amountText = applyAmountKey(_amountText, key)),
+                        onKey: (key) => setState(() {
+                          final start = _replaceOnType && key != backspaceKey ? '' : _amountText;
+                          _replaceOnType = false;
+                          _amountText = applyAmountKey(start, key);
+                        }),
                         onClear: () => setState(() => _amountText = ''),
                       ),
                       const SizedBox(height: 8),

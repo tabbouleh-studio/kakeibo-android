@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import '../models/enums.dart';
+import '../util/money.dart';
 import '../util/period.dart';
 import 'tables.dart';
 
@@ -63,6 +64,36 @@ class AppDatabase extends _$AppDatabase {
       ..where((e) => e.date.isBiggerOrEqualValue(start) & e.date.isSmallerThanValue(end))
       ..orderBy([(e) => OrderingTerm.desc(e.date), (e) => OrderingTerm.desc(e.createdAt)]);
     return query.watch();
+  }
+
+  Future<void> updateEntry(Entry entry) =>
+      update(entries).replace(entry.copyWith(date: dateOnly(entry.date), note: entry.note.trim()));
+
+  Future<void> deleteEntry(int id) => (delete(entries)..where((e) => e.id.equals(id))).go();
+
+  /// Puts a deleted entry back with its original id (for undo).
+  Future<void> restoreEntry(Entry entry) => into(entries).insert(entry);
+
+  /// All entries whose note contains [query], whose category starts with it,
+  /// or whose amount equals it (e.g. "2.5"). Newest first.
+  Stream<List<Entry>> searchEntries(String query) {
+    final q = query.trim();
+    final lower = q.toLowerCase();
+    final categories = [
+      for (final c in SpendCategory.values)
+        if (c.label.toLowerCase().startsWith(lower)) c.name,
+    ];
+    final fils = parseFils(q);
+    final escaped = q.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
+    final statement = select(entries)
+      ..where((e) {
+        var condition = e.note.like('%$escaped%', escapeChar: r'\');
+        if (categories.isNotEmpty) condition = condition | e.category.isIn(categories);
+        if (fils != null && fils > 0) condition = condition | e.amountFils.equals(fils);
+        return condition;
+      })
+      ..orderBy([(e) => OrderingTerm.desc(e.date), (e) => OrderingTerm.desc(e.createdAt)]);
+    return statement.watch();
   }
 
   // Month plans

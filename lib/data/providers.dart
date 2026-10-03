@@ -76,3 +76,47 @@ final budgetSummaryProvider = FutureProvider<BudgetSummary>((ref) async {
     spending: [for (final e in entries) (e.category, e.amountFils)],
   );
 });
+
+/// The budget month shown in the ledger. Starts at the current month.
+class LedgerPeriodNotifier extends Notifier<Period> {
+  int get _startDay => ref.read(settingsProvider).monthStartDay;
+
+  @override
+  Period build() => ref.watch(currentPeriodProvider);
+
+  bool get canGoNext => state.start.isBefore(ref.read(currentPeriodProvider).start);
+
+  void previous() => state = previousBudgetMonth(state, _startDay);
+
+  void next() {
+    if (canGoNext) state = nextBudgetMonth(state, _startDay);
+  }
+}
+
+final ledgerPeriodProvider = NotifierProvider<LedgerPeriodNotifier, Period>(
+  LedgerPeriodNotifier.new,
+);
+
+final ledgerEntriesProvider = StreamProvider<List<Entry>>((ref) {
+  final db = ref.watch(databaseProvider);
+  final period = ref.watch(ledgerPeriodProvider);
+  return db.watchEntries(period.start, period.end);
+});
+
+/// Ledger search text; empty means not searching.
+class LedgerSearchNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String query) => state = query;
+}
+
+final ledgerSearchProvider = NotifierProvider<LedgerSearchNotifier, String>(
+  LedgerSearchNotifier.new,
+);
+
+final searchResultsProvider = StreamProvider<List<Entry>>((ref) {
+  final query = ref.watch(ledgerSearchProvider).trim();
+  if (query.isEmpty) return Stream.value(const []);
+  return ref.watch(databaseProvider).searchEntries(query);
+});

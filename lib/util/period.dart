@@ -67,3 +67,19 @@ String formatPeriod(Period p, {DateTime? now}) {
   final f = DateFormat(showYear ? 'd MMM y' : 'd MMM');
   return '${f.format(p.start)} – ${f.format(last)}';
 }
+
+/// The budget month before [p].
+Period previousBudgetMonth(Period p, int startDay) =>
+    budgetMonthFor(DateTime(p.start.year, p.start.month, p.start.day - 1), startDay);
+
+/// The budget month after [p].
+Period nextBudgetMonth(Period p, int startDay) => budgetMonthFor(p.end, startDay);
+
+/// "Today", "Yesterday", "Thu 1 Oct", or "Thu 1 Oct 2025" for other years.
+String formatDay(DateTime day, {DateTime? now}) {
+  final today = now ?? DateTime.now();
+  final diff = daysBetween(day, today);
+  if (diff == 0) return 'Today';
+  if (diff == 1) return 'Yesterday';
+  return DateFormat(day.year == today.year ? 'EEE d MMM' : 'EEE d MMM y').format(day);
+}

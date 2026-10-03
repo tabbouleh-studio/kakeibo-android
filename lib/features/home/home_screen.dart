@@ -10,6 +10,7 @@ import '../../util/money.dart';
 import '../../util/period.dart';
 import '../../widgets/money_text.dart';
 import '../entry/entry_screen.dart';
+import '../ledger/ledger_screen.dart';
 import '../settings/month_setup_screen.dart';
 import '../settings/settings_screen.dart';
 import 'progress_widgets.dart';
@@ -124,16 +125,40 @@ class _Header extends StatelessWidget {
             ],
           ),
         ),
-        IconButton.filledTonal(
+        _HeaderButton(
+          tooltip: 'Ledger',
+          icon: Icons.receipt_long_outlined,
+          onPressed: () => _open(context, const LedgerScreen()),
+        ),
+        const SizedBox(width: 8),
+        _HeaderButton(
           tooltip: 'Settings',
-          style: IconButton.styleFrom(
-            backgroundColor: theme.colorScheme.surfaceContainerHigh,
-            foregroundColor: theme.colorScheme.onSurface,
-          ),
-          icon: const Icon(Icons.tune_rounded),
+          icon: Icons.tune_rounded,
           onPressed: () => _open(context, const SettingsScreen()),
         ),
       ],
+    );
+  }
+}
+
+class _HeaderButton extends StatelessWidget {
+  const _HeaderButton({required this.tooltip, required this.icon, required this.onPressed});
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return IconButton.filledTonal(
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        backgroundColor: scheme.surfaceContainerHigh,
+        foregroundColor: scheme.onSurface,
+      ),
+      icon: Icon(icon),
+      onPressed: onPressed,
     );
   }
 }

@@ -99,4 +99,28 @@ void main() {
     expect(formatPeriod(p, now: DateTime(2026, 10, 3)), '25 Sep – 24 Oct');
     expect(formatPeriod(p, now: DateTime(2027, 1, 1)), '25 Sep 2026 – 24 Oct 2026');
   });
+
+  group('month navigation', () {
+    test('previous and next with start day 25', () {
+      final oct = budgetMonthFor(DateTime(2026, 10, 3), 25);
+      expect(previousBudgetMonth(oct, 25).start, DateTime(2026, 8, 25));
+      expect(nextBudgetMonth(oct, 25).start, DateTime(2026, 10, 25));
+    });
+
+    test('previous across a clamped February', () {
+      final mar = budgetMonthFor(DateTime(2027, 3, 31), 31);
+      expect(mar.start, DateTime(2027, 3, 31));
+      final feb = previousBudgetMonth(mar, 31);
+      expect(feb, Period(DateTime(2027, 2, 28), DateTime(2027, 3, 31)));
+      expect(previousBudgetMonth(feb, 31).start, DateTime(2027, 1, 31));
+    });
+  });
+
+  test('formatDay', () {
+    final now = DateTime(2026, 10, 3, 12);
+    expect(formatDay(DateTime(2026, 10, 3), now: now), 'Today');
+    expect(formatDay(DateTime(2026, 10, 2), now: now), 'Yesterday');
+    expect(formatDay(DateTime(2026, 10, 1), now: now), 'Thu 1 Oct');
+    expect(formatDay(DateTime(2025, 12, 31), now: now), 'Wed 31 Dec 2025');
+  });
 }
