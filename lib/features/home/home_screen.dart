@@ -11,6 +11,7 @@ import '../../util/period.dart';
 import '../../widgets/money_text.dart';
 import '../entry/entry_screen.dart';
 import '../ledger/ledger_screen.dart';
+import '../settings/backup_actions.dart';
 import '../settings/month_setup_screen.dart';
 import '../settings/settings_screen.dart';
 import 'progress_widgets.dart';
@@ -49,20 +50,23 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeBody extends StatelessWidget {
+class _HomeBody extends ConsumerWidget {
   const _HomeBody({required this.summary, required this.period});
 
   final BudgetSummary summary;
   final Period period;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final hasData = summary.hasPlan || summary.spentFils > 0;
+    final remind = hasData && ref.watch(backupReminderProvider);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
       children: [
         const _Header(),
         const SizedBox(height: 20),
+        if (remind) ...[const _BackupBanner(), const SizedBox(height: 12)],
         if (summary.hasPlan)
           _HeroCard(summary: summary, period: period)
         else
@@ -137,6 +141,67 @@ class _Header extends StatelessWidget {
           onPressed: () => _open(context, const SettingsScreen()),
         ),
       ],
+    );
+  }
+}
+
+/// In-app reminder when the last backup is over 30 days old (or never).
+class _BackupBanner extends ConsumerWidget {
+  const _BackupBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final last = ref.watch(settingsProvider.select((s) => s.lastBackupAt));
+    final days = last == null ? null : daysBetween(last, DateTime.now());
+    return Card(
+      color: theme.colorScheme.primaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.cloud_off_rounded, color: theme.colorScheme.onPrimaryContainer),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Back up now?',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      Text(
+                        days == null
+                            ? 'Your data lives only on this phone.'
+                            : 'Last backup was $days days ago.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: ref.read(backupReminderProvider.notifier).snooze,
+                  child: const Text('Later'),
+                ),
+                TextButton(onPressed: () => runBackup(context, ref), child: const Text('Back up')),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -96,6 +96,11 @@ class AppDatabase extends _$AppDatabase {
     return statement.watch();
   }
 
+  /// Every entry, oldest first (for CSV export).
+  Future<List<Entry>> allEntries() => (select(
+    entries,
+  )..orderBy([(e) => OrderingTerm.asc(e.date), (e) => OrderingTerm.asc(e.createdAt)])).get();
+
   // Month plans
 
   Stream<PlanData?> watchPlan(DateTime periodStart) {

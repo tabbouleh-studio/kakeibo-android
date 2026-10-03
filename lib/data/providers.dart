@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_settings.dart';
 import '../models/budget_summary.dart';
 import '../util/period.dart';
+import 'backup.dart';
 import 'database.dart';
 
 /// Overridden in main() once preferences are loaded.
@@ -40,6 +41,22 @@ class SettingsNotifier extends Notifier<AppSettings> {
   Future<void> setWeekStartDay(int weekday) async {
     await _prefs.setInt(AppSettings.weekStartDayKey, weekday);
     state = state.copyWith(weekStartDay: weekday);
+  }
+
+  Future<void> setLockEnabled(bool enabled) async {
+    await _prefs.setBool(AppSettings.lockEnabledKey, enabled);
+    state = state.copyWith(lockEnabled: enabled);
+  }
+
+  Future<void> setLastBackupAt(DateTime time) async {
+    await _prefs.setInt(AppSettings.lastBackupAtKey, time.millisecondsSinceEpoch);
+    state = state.copyWith(lastBackupAt: time);
+  }
+
+  Future<void> applyBackup(BackupSettings s) async {
+    await setMonthStartDay(s.monthStartDay);
+    await setWeekStartDay(s.weekStartDay);
+    await setLockEnabled(s.lockEnabled);
   }
 }
 
@@ -120,3 +137,19 @@ final searchResultsProvider = StreamProvider<List<Entry>>((ref) {
   if (query.isEmpty) return Stream.value(const []);
   return ref.watch(databaseProvider).searchEntries(query);
 });
+
+/// True when the backup banner should show: never backed up, or more than
+/// 30 days ago. "Later" hides it until the app is next opened.
+class BackupReminderNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    final last = ref.watch(settingsProvider.select((s) => s.lastBackupAt));
+    return last == null || DateTime.now().difference(last) > const Duration(days: 30);
+  }
+
+  void snooze() => state = false;
+}
+
+final backupReminderProvider = NotifierProvider<BackupReminderNotifier, bool>(
+  BackupReminderNotifier.new,
+);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../data/providers.dart';
 import '../../models/app_settings.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
+import 'backup_actions.dart';
 import 'month_setup_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -46,6 +48,32 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Week starts on',
                 subtitle: AppSettings.weekStartChoices[settings.weekStartDay] ?? 'Sunday',
                 onTap: () => _pickWeekStart(context, ref, settings.weekStartDay),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const _GroupLabel('Your data'),
+          _Group(
+            children: [
+              _Tile(
+                icon: Icons.save_alt_rounded,
+                title: 'Back up',
+                subtitle: settings.lastBackupAt == null
+                    ? 'Never backed up'
+                    : 'Last backup ${DateFormat('d MMM y').format(settings.lastBackupAt!)}',
+                onTap: () => runBackup(context, ref),
+              ),
+              _Tile(
+                icon: Icons.settings_backup_restore_rounded,
+                title: 'Restore from backup',
+                subtitle: 'Replaces all data on this phone',
+                onTap: () => runRestore(context, ref),
+              ),
+              _Tile(
+                icon: Icons.table_chart_outlined,
+                title: 'Export CSV',
+                subtitle: 'All expenses, for Excel',
+                onTap: () => runCsvExport(context, ref),
               ),
             ],
           ),
