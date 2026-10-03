@@ -177,18 +177,13 @@ class _BackupBanner extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Back up now?',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
+                      Text('Back up now?', style: theme.textTheme.titleSmall),
                       Text(
                         days == null
                             ? 'Your data lives only on this phone.'
                             : 'Last backup was $days days ago.',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
