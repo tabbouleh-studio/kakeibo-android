@@ -11,6 +11,7 @@ import '../../util/period.dart';
 import '../../widgets/money_text.dart';
 import '../entry/entry_screen.dart';
 import '../ledger/ledger_screen.dart';
+import '../reflection/reflection_screen.dart';
 import '../settings/backup_actions.dart';
 import '../settings/month_setup_screen.dart';
 import '../settings/settings_screen.dart';
@@ -130,6 +131,12 @@ class _Header extends StatelessWidget {
           ),
         ),
         _HeaderButton(
+          tooltip: 'Reflect',
+          icon: Icons.self_improvement_rounded,
+          onPressed: () => _open(context, const ReflectionScreen()),
+        ),
+        const SizedBox(width: 8),
+        _HeaderButton(
           tooltip: 'Ledger',
           icon: Icons.receipt_long_outlined,
           onPressed: () => _open(context, const LedgerScreen()),
@@ -155,7 +162,7 @@ class _BackupBanner extends ConsumerWidget {
     final last = ref.watch(settingsProvider.select((s) => s.lastBackupAt));
     final days = last == null ? null : daysBetween(last, DateTime.now());
     return Card(
-      color: theme.colorScheme.primaryContainer,
+      color: theme.colorScheme.surfaceContainerHigh,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
@@ -164,7 +171,7 @@ class _BackupBanner extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.cloud_off_rounded, color: theme.colorScheme.onPrimaryContainer),
+                Icon(Icons.save_alt_rounded, color: theme.colorScheme.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

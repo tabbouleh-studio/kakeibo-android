@@ -101,6 +101,10 @@ class AppDatabase extends _$AppDatabase {
     entries,
   )..orderBy([(e) => OrderingTerm.asc(e.date), (e) => OrderingTerm.asc(e.createdAt)])).get();
 
+  Future<List<Entry>> entriesBetween(DateTime start, DateTime end) => (select(
+    entries,
+  )..where((e) => e.date.isBiggerOrEqualValue(start) & e.date.isSmallerThanValue(end))).get();
+
   // Month plans
 
   Stream<PlanData?> watchPlan(DateTime periodStart) {
@@ -121,6 +125,8 @@ class AppDatabase extends _$AppDatabase {
       );
     });
   }
+
+  Future<PlanData?> planFor(DateTime periodStart) => watchPlan(periodStart).first;
 
   /// If [periodStart] has no plan, copies the most recent earlier plan
   /// (income, savings goal and fixed costs) into it.
@@ -191,4 +197,56 @@ class AppDatabase extends _$AppDatabase {
       ]),
     );
   }
+
+  // Reflections
+
+  /// Newest period first.
+  Stream<List<Reflection>> watchReflections(ReflectionType type) =>
+      (select(reflections)
+            ..where((r) => r.type.equalsValue(type))
+            ..orderBy([(r) => OrderingTerm.desc(r.periodStart)]))
+          .watch();
+
+  Future<Reflection?> reflectionFor(ReflectionType type, DateTime periodStart) => (select(
+    reflections,
+  )..where((r) => r.type.equalsValue(type) & r.periodStart.equals(periodStart))).getSingleOrNull();
+
+  /// Saves a reflection. The numbers are a snapshot taken the first time it is
+  /// saved; later saves only update the notes, so history never shifts.
+  Future<void> saveReflection({
+    required ReflectionType type,
+    required DateTime periodStart,
+    required int haveFils,
+    required int saveFils,
+    required int spentFils,
+    required String haveNote,
+    required String saveNote,
+    required String spendNote,
+    required String improveNote,
+  }) => transaction(() async {
+    final existing = await reflectionFor(type, periodStart);
+    final notes = ReflectionsCompanion(
+      haveNote: Value(haveNote.trim()),
+      saveNote: Value(saveNote.trim()),
+      spendNote: Value(spendNote.trim()),
+      improveNote: Value(improveNote.trim()),
+    );
+    if (existing != null) {
+      await (update(reflections)..where((r) => r.id.equals(existing.id))).write(notes);
+    } else {
+      await into(reflections).insert(
+        notes.copyWith(
+          type: Value(type),
+          periodStart: Value(periodStart),
+          haveFils: Value(haveFils),
+          saveFils: Value(saveFils),
+          spentFils: Value(spentFils),
+          createdAt: Value(DateTime.now()),
+        ),
+      );
+    }
+  });
+
+  Future<void> deleteReflection(int id) =>
+      (delete(reflections)..where((r) => r.id.equals(id))).go();
 }

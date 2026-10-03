@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_settings.dart';
 import '../models/budget_summary.dart';
+import '../models/enums.dart';
 import '../util/period.dart';
 import 'backup.dart';
 import 'database.dart';
@@ -152,4 +153,8 @@ class BackupReminderNotifier extends Notifier<bool> {
 
 final backupReminderProvider = NotifierProvider<BackupReminderNotifier, bool>(
   BackupReminderNotifier.new,
+);
+
+final reflectionsProvider = StreamProvider.family<List<Reflection>, ReflectionType>(
+  (ref, type) => ref.watch(databaseProvider).watchReflections(type),
 );
