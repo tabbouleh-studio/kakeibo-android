@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../util/money.dart';
 
@@ -23,23 +24,66 @@ class AmountKeypad extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final row in _rows)
-          Row(children: [for (final key in row) Expanded(child: _key(context, key))]),
+          Row(
+            children: [
+              for (final key in row)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: _Key(
+                      keyValue: key,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        onKey(key);
+                      },
+                      onLongPress: key == backspaceKey
+                          ? () {
+                              HapticFeedback.mediumImpact();
+                              onClear();
+                            }
+                          : null,
+                    ),
+                  ),
+                ),
+            ],
+          ),
       ],
     );
   }
+}
 
-  Widget _key(BuildContext context, String key) {
-    final style = Theme.of(context).textTheme.headlineSmall;
-    return SizedBox(
-      height: 60,
+class _Key extends StatelessWidget {
+  const _Key({required this.keyValue, required this.onTap, this.onLongPress});
+
+  final String keyValue;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isAction = keyValue == backspaceKey || keyValue == '.';
+    return Material(
+      color: isAction
+          ? theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.6)
+          : theme.colorScheme.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => onKey(key),
-        onLongPress: key == backspaceKey ? onClear : null,
-        child: Center(
-          child: key == backspaceKey
-              ? Icon(Icons.backspace_outlined, semanticLabel: 'Delete')
-              : Text(key, style: style),
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        onLongPress: onLongPress,
+        child: SizedBox(
+          height: 58,
+          child: Center(
+            child: keyValue == backspaceKey
+                ? const Icon(Icons.backspace_outlined, semanticLabel: 'Delete', size: 22)
+                : Text(
+                    keyValue == '.' ? '·' : keyValue,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: keyValue == '.' ? FontWeight.w900 : FontWeight.w500,
+                    ),
+                  ),
+          ),
         ),
       ),
     );

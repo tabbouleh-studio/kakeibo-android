@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/database.dart';
 import '../../data/providers.dart';
 import '../../theme.dart';
 import '../../util/money.dart';
 import '../../util/period.dart';
+import '../../widgets/money_text.dart';
 
 /// Set intentions for the current budget month: income, fixed costs, savings goal.
 class MonthSetupScreen extends ConsumerStatefulWidget {
@@ -41,12 +43,13 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // Listen (not read): an unlistened provider is paused and might never load.
+    ref.listenManual(currentPlanProvider, (_, next) {
+      if (_loading && next.hasValue) _fill(next.value);
+    }, fireImmediately: true);
   }
 
-  Future<void> _load() async {
-    final plan = await ref.read(currentPlanProvider.future);
-    if (!mounted) return;
+  void _fill(PlanData? plan) {
     setState(() {
       if (plan != null) {
         _income.text = filsToInput(plan.incomeFils);
@@ -71,8 +74,9 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
 
   int _fils(TextEditingController c) => parseFils(c.text) ?? 0;
 
-  int get _spendable =>
-      _fils(_income) - _costs.fold<int>(0, (sum, c) => sum + _fils(c.amount)) - _fils(_savings);
+  int get _fixedTotal => _costs.fold<int>(0, (sum, c) => sum + _fils(c.amount));
+
+  int get _spendable => _fils(_income) - _fixedTotal - _fils(_savings);
 
   String? _validateAmount(String? value, {bool required = true}) {
     final text = value?.trim() ?? '';
@@ -102,127 +106,245 @@ class _MonthSetupScreenState extends ConsumerState<MonthSetupScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final period = ref.watch(currentPeriodProvider);
-    final spendable = _spendable;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('This month\'s plan')),
+      appBar: AppBar(
+        title: Column(
+          children: [
+            const Text('Plan your month'),
+            Text(
+              formatPeriod(period),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Form(
               key: _formKey,
               onChanged: () => setState(() {}),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+              child: Column(
                 children: [
-                  Text(
-                    formatPeriod(period),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _MoneyField(controller: _income, label: 'Income', validator: _validateAmount),
-                  const SizedBox(height: 24),
-                  Text('Fixed costs', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Rent, bills and other costs you pay every month. '
-                    'They reduce what you can spend but are not logged as expenses.',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  for (final (i, row) in _costs.indexed) ...[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       children: [
-                        Expanded(
-                          flex: 3,
-                          child: TextFormField(
-                            controller: row.name,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: const InputDecoration(labelText: 'Name'),
-                            validator: (v) =>
-                                (v?.trim().isEmpty ?? true) && !row.isBlank ? 'Required' : null,
-                          ),
+                        _Section(
+                          icon: Icons.payments_outlined,
+                          title: 'Income',
+                          subtitle: 'What comes in this month',
+                          child: _MoneyField(controller: _income, validator: _validateAmount),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
+                        const SizedBox(height: 12),
+                        _Section(
+                          icon: Icons.home_work_outlined,
+                          title: 'Fixed costs',
+                          subtitle:
+                              'Rent, bills and other must-pays. '
+                              'They reduce what you can spend but aren’t logged as expenses.',
+                          trailing: _fixedTotal > 0 ? MoneyText(_fixedTotal, size: 16) : null,
+                          child: _fixedCosts(theme),
+                        ),
+                        const SizedBox(height: 12),
+                        _Section(
+                          icon: Icons.savings_outlined,
+                          title: 'Savings goal',
+                          subtitle: 'Set aside first, before any spending',
                           child: _MoneyField(
-                            controller: row.amount,
-                            label: 'Amount',
-                            validator: (v) => row.isBlank ? null : _validateAmount(v),
+                            controller: _savings,
+                            validator: (v) => _validateAmount(v, required: false),
                           ),
-                        ),
-                        IconButton(
-                          tooltip: 'Remove',
-                          padding: const EdgeInsets.only(top: 8),
-                          icon: const Icon(Icons.close),
-                          onPressed: () => setState(() => _costs.removeAt(i).dispose()),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                  ],
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () => setState(() => _costs.add(_CostRow())),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add fixed cost'),
-                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _MoneyField(
-                    controller: _savings,
-                    label: 'Savings goal',
-                    validator: (v) => _validateAmount(v, required: false),
-                  ),
-                  const SizedBox(height: 24),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Spendable this month', style: theme.textTheme.titleSmall),
-                          const SizedBox(height: 4),
-                          Text(
-                            formatFils(spendable),
-                            style: moneyStyle(theme.textTheme.headlineMedium)
-                                .copyWith(color: spendable < 0 ? theme.colorScheme.error : null),
-                          ),
-                          if (spendable < 0)
-                            Text(
-                              'Your fixed costs and savings goal are more than your income.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.error,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    height: 56,
-                    child: FilledButton(
-                      onPressed: _saving ? null : _save,
-                      child: const Text('Save plan'),
-                    ),
-                  ),
+                  _SummaryBar(spendable: _spendable, saving: _saving, onSave: _save),
                 ],
               ),
             ),
     );
   }
+
+  Widget _fixedCosts(ThemeData theme) {
+    return Column(
+      children: [
+        for (final (i, row) in _costs.indexed)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: TextFormField(
+                    controller: row.name,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(hintText: 'e.g. Rent'),
+                    validator: (v) =>
+                        (v?.trim().isEmpty ?? true) && !row.isBlank ? 'Required' : null,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 4,
+                  child: _MoneyField(
+                    controller: row.amount,
+                    validator: (v) => row.isBlank ? null : _validateAmount(v),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Remove',
+                  padding: const EdgeInsets.only(top: 6),
+                  icon: Icon(
+                    Icons.remove_circle_outline,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  onPressed: () => setState(() => _costs.removeAt(i).dispose()),
+                ),
+              ],
+            ),
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              side: BorderSide(color: theme.colorScheme.outlineVariant),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+            onPressed: () => setState(() => _costs.add(_CostRow())),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add fixed cost'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.child,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Widget child;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(icon, size: 20, color: theme.colorScheme.onPrimaryContainer),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Text(title, style: theme.textTheme.titleMedium)),
+                ?trailing,
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 14),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryBar extends StatelessWidget {
+  const _SummaryBar({required this.spendable, required this.saving, required this.onSave});
+
+  final int spendable;
+  final bool saving;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final negative = spendable < 0;
+    return Material(
+      color: theme.colorScheme.surfaceContainerLow,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 16, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      negative ? 'More than your income' : 'Spendable this month',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: negative
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: MoneyText(
+                        spendable,
+                        size: 26,
+                        color: negative ? theme.colorScheme.error : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 28)),
+                onPressed: saving ? null : onSave,
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _MoneyField extends StatelessWidget {
-  const _MoneyField({required this.controller, required this.label, this.validator});
+  const _MoneyField({required this.controller, this.validator});
 
   final TextEditingController controller;
-  final String label;
   final FormFieldValidator<String>? validator;
 
   @override
@@ -230,8 +352,8 @@ class _MoneyField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      style: moneyStyle(null),
-      decoration: InputDecoration(labelText: label, prefixText: 'KD ', hintText: '0.000'),
+      style: moneyStyle(Theme.of(context).textTheme.titleMedium),
+      decoration: const InputDecoration(prefixText: 'KD ', hintText: '0.000'),
       validator: validator,
     );
   }

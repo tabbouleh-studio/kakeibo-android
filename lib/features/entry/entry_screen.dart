@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -46,15 +47,17 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
+    HapticFeedback.lightImpact();
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final category = _category!;
+    final amount = _amountFils;
     await ref
         .read(databaseProvider)
-        .addEntry(amountFils: _amountFils, category: category, date: _date, note: _note.text);
+        .addEntry(amountFils: amount, category: category, date: _date, note: _note.text);
     navigator.pop();
     messenger.showSnackBar(
-      SnackBar(content: Text('Saved ${formatFils(_amountFils)} · ${category.label}')),
+      SnackBar(content: Text('Saved ${formatFils(amount)} to ${category.label}')),
     );
   }
 
@@ -65,13 +68,25 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
     return DateFormat('EEE d MMM').format(_date);
   }
 
+  String get _saveLabel {
+    if (_amountFils == 0) return 'Enter an amount';
+    if (_category == null) return 'Choose a category';
+    return 'Save ${formatFils(_amountFils)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final empty = _amountText.isEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New expense')),
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Close',
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('New expense'),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
@@ -83,15 +98,20 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
                   child: Column(
                     children: [
                       Expanded(
-                        child: Center(
-                          child: FittedBox(
-                            child: Text(
-                              'KD ${empty ? '0.000' : _amountText}',
-                              style: moneyStyle(
-                                theme.textTheme.displayMedium,
-                              ).copyWith(color: empty ? theme.colorScheme.onSurfaceVariant : null),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _AmountDisplay(text: _amountText),
+                            const SizedBox(height: 14),
+                            ActionChip(
+                              avatar: const Icon(Icons.calendar_today_rounded, size: 16),
+                              label: Text(_dateLabel()),
+                              onPressed: _pickDate,
+                              side: BorderSide.none,
+                              backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                              shape: const StadiumBorder(),
                             ),
-                          ),
+                          ],
                         ),
                       ),
                       Row(
@@ -103,32 +123,26 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
                                 child: _CategoryButton(
                                   category: c,
                                   selected: _category == c,
-                                  onTap: () => setState(() => _category = c),
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() => _category = c);
+                                  },
                                 ),
                               ),
                             ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _note,
-                              textCapitalization: TextCapitalization.sentences,
-                              decoration: const InputDecoration(
-                                hintText: 'Note (optional)',
-                                isDense: true,
-                              ),
-                            ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: TextField(
+                          controller: _note,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: const InputDecoration(
+                            hintText: 'Add a note',
+                            prefixIcon: Icon(Icons.notes_rounded),
                           ),
-                          const SizedBox(width: 8),
-                          ActionChip(
-                            avatar: const Icon(Icons.calendar_today_outlined, size: 18),
-                            label: Text(_dateLabel()),
-                            onPressed: _pickDate,
-                          ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 8),
                       AmountKeypad(
@@ -137,15 +151,18 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
                         onClear: () => setState(() => _amountText = ''),
                       ),
                       const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: FilledButton(
-                          onPressed: _canSave ? _save : null,
-                          child: const Text('Save'),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 58,
+                          child: FilledButton(
+                            onPressed: _canSave ? _save : null,
+                            child: Text(_saveLabel, style: moneyStyle(null)),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -153,6 +170,59 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The typed amount, with fils digits still to come shown faintly.
+class _AmountDisplay extends StatelessWidget {
+  const _AmountDisplay({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ink = theme.colorScheme.onSurface;
+    final faint = theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
+    final dot = text.indexOf('.');
+    final whole = text.isEmpty ? '0' : (dot < 0 ? text : text.substring(0, dot));
+    final typedFils = dot < 0 ? '' : text.substring(dot + 1);
+    final pendingFils = '000'.substring(typedFils.length);
+    final style = moneyStyle(
+      const TextStyle(fontSize: 64, fontWeight: FontWeight.w600, height: 1.1),
+    ).copyWith(color: text.isEmpty ? faint : ink, letterSpacing: -1.5);
+    final small = TextStyle(fontSize: 34, letterSpacing: 0);
+
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text.rich(
+        TextSpan(
+          style: style,
+          children: [
+            TextSpan(
+              text: 'KD ',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurfaceVariant,
+                letterSpacing: 0,
+              ),
+            ),
+            TextSpan(text: whole),
+            TextSpan(
+              text: '.',
+              style: small.copyWith(color: dot < 0 ? faint : null),
+            ),
+            TextSpan(text: typedFils, style: small),
+            TextSpan(
+              text: pendingFils,
+              style: small.copyWith(color: faint),
+            ),
+          ],
+        ),
+        semanticsLabel: 'Amount ${formatFils(parseFils(text) ?? 0)}',
       ),
     );
   }
@@ -169,24 +239,36 @@ class _CategoryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = category.color(theme.brightness);
-    return Material(
-      color: selected ? color.withValues(alpha: 0.18) : Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: selected ? color : theme.colorScheme.outlineVariant, width: 1.5),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      decoration: BoxDecoration(
+        color: selected ? color.withValues(alpha: 0.2) : theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: selected ? color : theme.colorScheme.outlineVariant,
+          width: selected ? 2 : 1,
+        ),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: SizedBox(
-          height: 72,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(category.icon, color: color),
-              const SizedBox(height: 4),
-              Text(category.label, style: theme.textTheme.labelMedium),
-            ],
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: SizedBox(
+            height: 80,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(selected ? Icons.check_circle_rounded : category.icon, color: color),
+                const SizedBox(height: 6),
+                Text(
+                  category.label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

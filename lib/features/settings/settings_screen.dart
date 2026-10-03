@@ -12,67 +12,158 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final settings = ref.watch(settingsProvider);
-    final notifier = ref.read(settingsProvider.notifier);
     final period = ref.watch(currentPeriodProvider);
     final summary = ref.watch(budgetSummaryProvider).value;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          const _Header('Budget'),
-          ListTile(
-            leading: const Icon(Icons.edit_note),
-            title: const Text('This month\'s plan'),
-            subtitle: Text(
-              summary == null || !summary.hasPlan
-                  ? 'Not set yet'
-                  : 'Spendable ${formatFils(summary.spendableFils)}',
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () =>
-                Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => const MonthSetupScreen())),
+          const _GroupLabel('Budget'),
+          _Group(
+            children: [
+              _Tile(
+                icon: Icons.edit_note_rounded,
+                title: 'This month’s plan',
+                subtitle: summary == null || !summary.hasPlan
+                    ? 'Not set yet'
+                    : 'Spendable ${formatFils(summary.spendableFils)}',
+                onTap: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const MonthSetupScreen())),
+              ),
+              _Tile(
+                icon: Icons.event_repeat_rounded,
+                title: 'Month starts on',
+                subtitle: 'Day ${settings.monthStartDay} · now ${formatPeriod(period)}',
+                onTap: () => _pickMonthStart(context, ref, settings.monthStartDay),
+              ),
+              _Tile(
+                icon: Icons.view_week_outlined,
+                title: 'Week starts on',
+                subtitle: AppSettings.weekStartChoices[settings.weekStartDay] ?? 'Sunday',
+                onTap: () => _pickWeekStart(context, ref, settings.weekStartDay),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.event_repeat),
-            title: const Text('Month starts on day'),
-            subtitle: Text('Current month: ${formatPeriod(period)}'),
-            trailing: DropdownButton<int>(
-              value: settings.monthStartDay,
-              underline: const SizedBox.shrink(),
-              menuMaxHeight: 400,
-              items: [for (var d = 1; d <= 31; d++) DropdownMenuItem(value: d, child: Text('$d'))],
-              onChanged: (d) => d == null ? null : notifier.setMonthStartDay(d),
-            ),
-          ),
-          if (settings.monthStartDay > 28)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(72, 0, 16, 8),
-              child: Text('In shorter months the budget month starts on the last day.'),
-            ),
-          ListTile(
-            leading: const Icon(Icons.view_week_outlined),
-            title: const Text('Week starts on'),
-            trailing: DropdownButton<int>(
-              value: settings.weekStartDay,
-              underline: const SizedBox.shrink(),
-              items: [
-                for (final MapEntry(:key, :value) in AppSettings.weekStartChoices.entries)
-                  DropdownMenuItem(value: key, child: Text(value)),
+          const SizedBox(height: 32),
+          Center(
+            child: Column(
+              children: [
+                Text('家計簿', style: theme.textTheme.titleLarge),
+                const SizedBox(height: 4),
+                Text(
+                  'Kakeibo works fully offline.\nYour data never leaves this phone.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
-              onChanged: (d) => d == null ? null : notifier.setWeekStartDay(d),
             ),
           ),
         ],
       ),
     );
   }
+
+  Future<void> _pickMonthStart(BuildContext context, WidgetRef ref, int current) async {
+    final day = await showModalBottomSheet<int>(
+      context: context,
+      builder: (context) => _MonthStartSheet(current: current),
+    );
+    if (day != null) await ref.read(settingsProvider.notifier).setMonthStartDay(day);
+  }
+
+  Future<void> _pickWeekStart(BuildContext context, WidgetRef ref, int current) async {
+    final day = await showModalBottomSheet<int>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Week starts on', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            for (final MapEntry(:key, :value) in AppSettings.weekStartChoices.entries)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                title: Text(value),
+                trailing: key == current
+                    ? Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => Navigator.of(context).pop(key),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (day != null) await ref.read(settingsProvider.notifier).setWeekStartDay(day);
+  }
 }
 
-class _Header extends StatelessWidget {
-  const _Header(this.text);
+class _MonthStartSheet extends StatelessWidget {
+  const _MonthStartSheet({required this.current});
+
+  final int current;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Month starts on day', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Pick your salary day. Days 29–31 use the last day of shorter months.',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 16),
+            GridView.count(
+              crossAxisCount: 7,
+              shrinkWrap: true,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                for (var d = 1; d <= 31; d++)
+                  Material(
+                    color: d == current
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHigh,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: () => Navigator.of(context).pop(d),
+                      child: Center(
+                        child: Text(
+                          '$d',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: d == current ? theme.colorScheme.onPrimary : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GroupLabel extends StatelessWidget {
+  const _GroupLabel(this.text);
 
   final String text;
 
@@ -80,11 +171,68 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
       child: Text(
-        text,
-        style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.primary),
+        text.toUpperCase(),
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          letterSpacing: 1.2,
+        ),
       ),
+    );
+  }
+}
+
+class _Group extends StatelessWidget {
+  const _Group({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (final (i, child) in children.indexed) ...[
+            if (i > 0) const Divider(indent: 64),
+            child,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({required this.icon, required this.title, required this.subtitle, this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Icon(icon, size: 20, color: theme.colorScheme.onPrimaryContainer),
+      ),
+      title: Text(title, style: theme.textTheme.titleSmall),
+      subtitle: Text(
+        subtitle,
+        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      trailing: Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant),
+      onTap: onTap,
     );
   }
 }

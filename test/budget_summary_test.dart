@@ -54,4 +54,16 @@ void main() {
     expect(s.savedFils, 0);
     expect(s.savingsProgress, 0);
   });
+
+  test('category share without a plan uses total spent', () {
+    final s = BudgetSummary.compute(
+      hasPlan: false,
+      incomeFils: 0,
+      fixedCostsFils: 0,
+      savingsGoalFils: 0,
+      spending: [(SpendCategory.needs, 3000), (SpendCategory.wants, 1000)],
+    );
+    expect(s.categoryShare(SpendCategory.needs), 0.75);
+    expect(s.categoryShare(SpendCategory.culture), 0);
+  });
 }
