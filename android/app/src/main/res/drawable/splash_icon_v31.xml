@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ launch icon. The system draws it at 288dp and only shows the
+     centre 192dp circle (2/3), so the green circle has radius 36 of 108. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/ink_green"
+        android:pathData="M54,54m-36,0a36,36 0,1 1,72 0a36,36 0,1 1,-72 0" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.8"
+        android:scaleY="0.8">
+        <path
+            android:fillColor="@color/cream"
+            android:pathData="M38,32h30a6,6 0,0 1,6 6v32a6,6 0,0 1,-6 6h-30a4,4 0,0 1,-4 -4v-36a4,4 0,0 1,4 -4z" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="@color/ink_green"
+            android:strokeWidth="2.5"
+            android:pathData="M42,32v44" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="@color/ink_green"
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:pathData="M49,45h18M49,53h18M49,61h11" />
+    </group>
+</vector>
