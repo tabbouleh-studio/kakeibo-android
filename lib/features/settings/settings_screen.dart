@@ -169,11 +169,11 @@ class SettingsScreen extends ConsumerWidget {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Text(
                   'Made with ❤️ by Tabbouleh Studio 🥗',
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.labelLarge?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
