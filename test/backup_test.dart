@@ -101,6 +101,23 @@ void main() {
     await target.close();
   });
 
+  test('restoring the safety copy undoes a restore', () async {
+    final db = memoryDb();
+    await fill(db);
+    final original = await createBackup(db, settings);
+
+    final other = memoryDb();
+    await other.addEntry(amountFils: 999, category: SpendCategory.extra, date: DateTime(2020));
+    await restoreBackup(db, await createBackup(other, settings));
+    expect((await db.allEntries()).single.amountFils, 999);
+
+    await restoreBackup(db, original);
+    final after = await createBackup(db, settings);
+    expect(jsonEncode(withoutTimestamp(after)), jsonEncode(withoutTimestamp(original)));
+    await db.close();
+    await other.close();
+  });
+
   group('validation', () {
     late Map<String, dynamic> valid;
 

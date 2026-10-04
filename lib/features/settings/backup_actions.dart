@@ -18,18 +18,8 @@ void _toast(ScaffoldMessengerState messenger, String text) => messenger
 /// Writes a JSON backup to a location the user picks.
 Future<void> runBackup(BuildContext context, WidgetRef ref) async {
   final messenger = ScaffoldMessenger.of(context);
-  final settings = ref.read(settingsProvider);
   try {
-    final data = await createBackup(
-      ref.read(databaseProvider),
-      BackupSettings(
-        monthStartDay: settings.monthStartDay,
-        weekStartDay: settings.weekStartDay,
-        lockEnabled: settings.lockEnabled,
-        currencyCode: settings.currencyCode,
-        hideAmounts: settings.hideAmounts,
-      ),
-    );
+    final data = await createBackup(ref.read(databaseProvider), _currentSettings(ref));
     final uri = await FilePicker.saveFile(
       dialogTitle: 'Save backup',
       fileName: 'kakeibo-backup-${_stamp()}.json',
@@ -96,13 +86,50 @@ Future<void> runRestore(BuildContext context, WidgetRef ref) async {
   if (confirmed != true) return;
 
   try {
-    await restoreBackup(ref.read(databaseProvider), data);
+    final db = ref.read(databaseProvider);
+    // Safety copy of what's on the phone now, so the restore can be undone.
+    final before = await createBackup(db, _currentSettings(ref));
+    await restoreBackup(db, data);
     await ref.read(settingsProvider.notifier).applyBackup(data.settings);
-    _toast(messenger, 'Backup restored.');
+    ref.read(undoRestoreProvider.notifier).set(before);
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text('Backup restored.'),
+          duration: const Duration(seconds: 20),
+          action: SnackBarAction(label: 'Undo', onPressed: () => undoRestore(ref, messenger)),
+        ),
+      );
   } catch (e) {
     // The restore runs in one transaction, so nothing changed.
     _toast(messenger, 'Restore failed, your data was not changed: $e');
   }
+}
+
+/// Puts back the data that was on the phone before the last restore.
+Future<void> undoRestore(WidgetRef ref, ScaffoldMessengerState messenger) async {
+  final before = ref.read(undoRestoreProvider);
+  if (before == null) return;
+  try {
+    await restoreBackup(ref.read(databaseProvider), before);
+    await ref.read(settingsProvider.notifier).applyBackup(before.settings);
+    ref.read(undoRestoreProvider.notifier).set(null);
+    _toast(messenger, 'Restore undone. Your previous data is back.');
+  } catch (e) {
+    _toast(messenger, 'Could not undo the restore: $e');
+  }
+}
+
+BackupSettings _currentSettings(WidgetRef ref) {
+  final s = ref.read(settingsProvider);
+  return BackupSettings(
+    monthStartDay: s.monthStartDay,
+    weekStartDay: s.weekStartDay,
+    lockEnabled: s.lockEnabled,
+    currencyCode: s.currencyCode,
+    hideAmounts: s.hideAmounts,
+  );
 }
 
 Future<void> _showError(BuildContext context, String message) => showDialog<void>(

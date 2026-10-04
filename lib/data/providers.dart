@@ -192,3 +192,16 @@ class AmountsRevealedNotifier extends Notifier<bool> {
 final amountsRevealedProvider = NotifierProvider<AmountsRevealedNotifier, bool>(
   AmountsRevealedNotifier.new,
 );
+
+/// The data that was on the phone before the last restore, kept until the
+/// app closes so the restore can be undone.
+class UndoRestoreNotifier extends Notifier<BackupData?> {
+  @override
+  BackupData? build() => null;
+
+  void set(BackupData? data) => state = data;
+}
+
+final undoRestoreProvider = NotifierProvider<UndoRestoreNotifier, BackupData?>(
+  UndoRestoreNotifier.new,
+);

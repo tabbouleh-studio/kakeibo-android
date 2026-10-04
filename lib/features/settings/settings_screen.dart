@@ -125,6 +125,13 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: 'Replaces all data on this phone',
                 onTap: () => runRestore(context, ref),
               ),
+              if (ref.watch(undoRestoreProvider) != null)
+                _Tile(
+                  icon: Icons.undo_rounded,
+                  title: 'Undo last restore',
+                  subtitle: 'Bring back the data from before the restore',
+                  onTap: () => undoRestore(ref, ScaffoldMessenger.of(context)),
+                ),
               _Tile(
                 icon: Icons.table_chart_outlined,
                 title: 'Export CSV',
