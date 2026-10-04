@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch icon for Android 11 and older: the app icon (green circle, cream notebook). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="112dp"
+    android:height="112dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/ink_green"
+        android:pathData="M54,54m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
+    <path
+        android:fillColor="@color/cream"
+        android:pathData="M38,32h30a6,6 0,0 1,6 6v32a6,6 0,0 1,-6 6h-30a4,4 0,0 1,-4 -4v-36a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@color/ink_green"
+        android:strokeWidth="2.5"
+        android:pathData="M42,32v44" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="@color/ink_green"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M49,45h18M49,53h18M49,61h11" />
+</vector>
