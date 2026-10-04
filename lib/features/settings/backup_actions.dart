@@ -57,12 +57,13 @@ Future<void> runCsvExport(BuildContext context, WidgetRef ref) async {
 }
 
 /// Picks a backup file, validates it, confirms, then replaces all data.
-Future<void> runRestore(BuildContext context, WidgetRef ref) async {
+/// Returns whether data was restored.
+Future<bool> runRestore(BuildContext context, WidgetRef ref) async {
   final messenger = ScaffoldMessenger.of(context);
   final BackupData data;
   try {
     final file = await FilePicker.pickFile(dialogTitle: 'Choose a Kakeibo backup');
-    if (file == null) return; // cancelled
+    if (file == null) return false; // cancelled
     final String text;
     try {
       text = utf8.decode(await file.readAsBytes());
@@ -72,18 +73,18 @@ Future<void> runRestore(BuildContext context, WidgetRef ref) async {
     data = BackupData.decode(text);
   } on BackupFormatException catch (e) {
     if (context.mounted) await _showError(context, e.message);
-    return;
+    return false;
   } catch (e) {
     _toast(messenger, 'Could not open the file: $e');
-    return;
+    return false;
   }
-  if (!context.mounted) return;
+  if (!context.mounted) return false;
 
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => _ConfirmRestoreDialog(data: data),
   );
-  if (confirmed != true) return;
+  if (confirmed != true) return false;
 
   try {
     final db = ref.read(databaseProvider);
@@ -101,9 +102,11 @@ Future<void> runRestore(BuildContext context, WidgetRef ref) async {
           action: SnackBarAction(label: 'Undo', onPressed: () => undoRestore(ref, messenger)),
         ),
       );
+    return true;
   } catch (e) {
     // The restore runs in one transaction, so nothing changed.
     _toast(messenger, 'Restore failed, your data was not changed: $e');
+    return false;
   }
 }
 

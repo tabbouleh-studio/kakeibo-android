@@ -12,6 +12,7 @@ class AppSettings {
     this.currencyCode = 'KWD',
     this.hideAmounts = false,
     this.themeMode = ThemeMode.system,
+    this.onboardingDone = false,
   });
 
   static const monthStartDayKey = 'monthStartDay';
@@ -21,6 +22,7 @@ class AppSettings {
   static const currencyKey = 'currency';
   static const hideAmountsKey = 'hideAmounts';
   static const themeModeKey = 'themeMode';
+  static const onboardingDoneKey = 'onboardingDone';
   static const keys = {
     monthStartDayKey,
     weekStartDayKey,
@@ -29,6 +31,7 @@ class AppSettings {
     currencyKey,
     hideAmountsKey,
     themeModeKey,
+    onboardingDoneKey,
   };
 
   /// Week start choices offered in settings, as [DateTime.weekday] values.
@@ -61,6 +64,9 @@ class AppSettings {
   /// Light, dark, or follow the phone.
   final ThemeMode themeMode;
 
+  /// First-launch setup finished (device state, not in backups).
+  final bool onboardingDone;
+
   Currency get currency => Currency.byCode(currencyCode);
 
   AppSettings copyWith({
@@ -71,6 +77,7 @@ class AppSettings {
     String? currencyCode,
     bool? hideAmounts,
     ThemeMode? themeMode,
+    bool? onboardingDone,
   }) => AppSettings(
     monthStartDay: monthStartDay ?? this.monthStartDay,
     weekStartDay: weekStartDay ?? this.weekStartDay,
@@ -79,6 +86,7 @@ class AppSettings {
     currencyCode: currencyCode ?? this.currencyCode,
     hideAmounts: hideAmounts ?? this.hideAmounts,
     themeMode: themeMode ?? this.themeMode,
+    onboardingDone: onboardingDone ?? this.onboardingDone,
   );
 
   @override
@@ -90,7 +98,8 @@ class AppSettings {
       other.lastBackupAt == lastBackupAt &&
       other.currencyCode == currencyCode &&
       other.hideAmounts == hideAmounts &&
-      other.themeMode == themeMode;
+      other.themeMode == themeMode &&
+      other.onboardingDone == onboardingDone;
 
   @override
   int get hashCode => Object.hash(
@@ -101,5 +110,6 @@ class AppSettings {
     currencyCode,
     hideAmounts,
     themeMode,
+    onboardingDone,
   );
 }

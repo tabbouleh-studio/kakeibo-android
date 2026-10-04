@@ -107,6 +107,13 @@ class AppDatabase extends _$AppDatabase {
     entries,
   )..where((e) => e.date.isBiggerOrEqualValue(start) & e.date.isSmallerThanValue(end))).get();
 
+  /// True once anything has been recorded or planned.
+  Future<bool> hasAnyData() async {
+    final entry = await (select(entries)..limit(1)).getSingleOrNull();
+    if (entry != null) return true;
+    return await (select(monthPlans)..limit(1)).getSingleOrNull() != null;
+  }
+
   // Month plans
 
   Stream<PlanData?> watchPlan(DateTime periodStart) {

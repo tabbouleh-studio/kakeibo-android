@@ -7,6 +7,7 @@ import '../../data/providers.dart';
 import '../../models/app_settings.dart';
 import '../../util/period.dart';
 import '../lock/app_gate.dart';
+import '../../widgets/day_grid.dart';
 import 'backup_actions.dart';
 import 'currency_screen.dart';
 import 'month_setup_screen.dart';
@@ -296,34 +297,7 @@ class _MonthStartSheet extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 7,
-              shrinkWrap: true,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                for (var d = 1; d <= 31; d++)
-                  Material(
-                    color: d == current
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.surfaceContainerHigh,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: () => Navigator.of(context).pop(d),
-                      child: Center(
-                        child: Text(
-                          '$d',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: d == current ? theme.colorScheme.onPrimary : null,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            DayGrid(selected: current, onSelected: (d) => Navigator.of(context).pop(d)),
           ],
         ),
       ),

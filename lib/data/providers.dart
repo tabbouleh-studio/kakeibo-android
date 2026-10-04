@@ -36,6 +36,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
       themeMode:
           ThemeMode.values.asNameMap()[prefs.getString(AppSettings.themeModeKey)] ??
           ThemeMode.system,
+      onboardingDone: prefs.getBool(AppSettings.onboardingDoneKey) ?? false,
       lastBackupAt: backupMillis == null ? null : DateTime.fromMillisecondsSinceEpoch(backupMillis),
     );
   }
@@ -68,6 +69,11 @@ class SettingsNotifier extends Notifier<AppSettings> {
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs.setString(AppSettings.themeModeKey, mode.name);
     state = state.copyWith(themeMode: mode);
+  }
+
+  Future<void> setOnboardingDone() async {
+    await _prefs.setBool(AppSettings.onboardingDoneKey, true);
+    state = state.copyWith(onboardingDone: true);
   }
 
   Future<void> setLastBackupAt(DateTime time) async {
