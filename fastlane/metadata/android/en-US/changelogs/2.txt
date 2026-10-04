@@ -1,0 +1,1 @@
+Tap a category on Home (Needs, Wants, Culture, Extra) to see its expenses this month, with its total and share of spending. Add an expense with the category already selected. Layout fix for narrow screens and large text.

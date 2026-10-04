@@ -1,6 +1,6 @@
 /// App details shown on the About page. Keep [appVersion] equal to the
 /// `version:` in pubspec.yaml (a test checks this).
-const appVersion = '1.0.0';
+const appVersion = '1.0.1';
 const appName = 'Kakeibo';
 const studioName = 'Tabbouleh Studio';
 const sourceCodeUrl = 'https://github.com/tabbouleh-studio/kakeibo-android';
