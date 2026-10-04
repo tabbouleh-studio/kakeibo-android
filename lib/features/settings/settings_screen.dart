@@ -6,6 +6,8 @@ import 'package:local_auth/local_auth.dart';
 import '../../data/providers.dart';
 import '../../models/app_settings.dart';
 import '../../util/period.dart';
+import '../../app_info.dart';
+import '../about/about_screen.dart';
 import '../lock/app_gate.dart';
 import '../../widgets/day_grid.dart';
 import 'backup_actions.dart';
@@ -154,6 +156,19 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Export CSV',
                 subtitle: 'All expenses, for Excel',
                 onTap: () => runCsvExport(context, ref),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _Group(
+            children: [
+              _Tile(
+                icon: Icons.info_outline_rounded,
+                title: 'About Kakeibo',
+                subtitle: 'Version $appVersion · Free and open source',
+                onTap: () =>
+                    Navigator.of(context)
+                        .push(MaterialPageRoute(builder: (_) => const AboutScreen())),
               ),
             ],
           ),

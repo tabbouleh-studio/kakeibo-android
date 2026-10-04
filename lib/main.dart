@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app_info.dart';
 import 'data/database.dart';
 import 'data/providers.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -14,6 +16,10 @@ import 'widgets/money_scope.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // SQLite is compiled into the app from source; list its notice too.
+  LicenseRegistry.addLicense(() async* {
+    yield const LicenseEntryWithLineBreaks(['SQLite'], sqliteNotice);
+  });
   final prefs = await SharedPreferencesWithCache.create(
     cacheOptions: const SharedPreferencesWithCacheOptions(allowList: AppSettings.keys),
   );
