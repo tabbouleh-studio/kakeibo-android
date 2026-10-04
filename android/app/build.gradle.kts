@@ -49,15 +49,19 @@ android {
 
     buildTypes {
         release {
-            if (keyProperties.isEmpty()) {
-                // Never fall back to the debug key: an APK signed differently
-                // can't update the installed app without wiping its data.
-                throw GradleException(
-                    "Missing android/key.properties. Restore the release key from your backup.",
-                )
-            }
-            signingConfig = signingConfigs.getByName("release")
+            // Signed with the private key when android/key.properties exists.
+            // Without it (e.g. F-Droid's build server) the APK is left unsigned
+            // for the builder to sign; it never falls back to the debug key,
+            // which could not update the installed app.
+            signingConfig =
+                if (keyProperties.isEmpty()) null else signingConfigs.getByName("release")
         }
+    }
+
+    // No Google-encrypted dependency metadata in the APK (F-Droid / IzzyOnDroid).
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 }
 

@@ -96,3 +96,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Compile SQLite from the bundled source instead of downloading a pre-built
+# binary, so the app can be built fully from source (F-Droid).
+hooks:
+  user_defines:
+    sqlite3:
+      source: source
+      path: third_party/sqlite/sqlite3.c
