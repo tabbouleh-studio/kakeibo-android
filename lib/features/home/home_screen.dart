@@ -10,6 +10,7 @@ import '../../util/period.dart';
 import '../../widgets/money_text.dart';
 import '../settings/backup_actions.dart';
 import '../settings/month_setup_screen.dart';
+import 'category_screen.dart';
 import 'progress_widgets.dart';
 import '../../widgets/money_scope.dart';
 
@@ -72,12 +73,17 @@ class _HomeBody extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text('Categories', style: theme.textTheme.titleLarge),
-            const Spacer(),
+            const SizedBox(width: 12),
             if (summary.spentFils > 0)
-              Text(
-                '${context.money(summary.spentFils)} spent',
-                style: moneyStyle(theme.textTheme.bodyMedium)
-                    .copyWith(color: theme.colorScheme.onSurfaceVariant),
+              Expanded(
+                child: Text(
+                  '${context.money(summary.spentFils)} spent',
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: moneyStyle(theme.textTheme.bodyMedium)
+                      .copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
               ),
           ],
         ),
@@ -487,47 +493,51 @@ class _CategoryTile extends StatelessWidget {
     final spent = summary.spentByCategory[category]!;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _open(context, CategoryScreen(category: category)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(category.icon, color: color, size: 20),
                   ),
-                  child: Icon(category.icon, color: color, size: 20),
-                ),
-                const Spacer(),
-                if (spent > 0)
-                  Text(
-                    '${(share * 100).round()}%',
-                    style: moneyStyle(theme.textTheme.labelMedium)
-                        .copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              category.label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+                  const Spacer(),
+                  if (spent > 0)
+                    Text(
+                      '${(share * 100).round()}%',
+                      style: moneyStyle(theme.textTheme.labelMedium)
+                          .copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(height: 2),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: MoneyText(spent, size: 22),
-            ),
-            const SizedBox(height: 12),
-            ProgressBar(value: share, color: color, height: 6),
-          ],
+              const SizedBox(height: 14),
+              Text(
+                category.label,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 2),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: MoneyText(spent, size: 22),
+              ),
+              const SizedBox(height: 12),
+              ProgressBar(value: share, color: color, height: 6),
+            ],
+          ),
         ),
       ),
     );

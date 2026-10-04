@@ -16,9 +16,12 @@ import 'amount_keypad.dart';
 /// Quick entry: type the amount, tap a category, tap Save.
 /// With [entry], edits that entry instead.
 class EntryScreen extends ConsumerStatefulWidget {
-  const EntryScreen({super.key, this.entry});
+  const EntryScreen({super.key, this.entry, this.initialCategory});
 
   final Entry? entry;
+
+  /// Pre-selected category for a new expense.
+  final SpendCategory? initialCategory;
 
   @override
   ConsumerState<EntryScreen> createState() => _EntryScreenState();
@@ -39,6 +42,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen> {
   @override
   void initState() {
     super.initState();
+    _category = widget.initialCategory;
     if (widget.entry case final e?) {
       _amountText = filsToInput(e.amountFils, currency: _currency);
       _replaceOnType = true;
