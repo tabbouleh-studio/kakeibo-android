@@ -40,12 +40,14 @@ you spend, and reflect on how to improve.
 
 ## Download
 
-Kakeibo will be available on IzzyOnDroid and F-Droid. Until then, signed APKs are
-attached to the [releases](https://github.com/tabbouleh-studio/kakeibo-android/releases).
+Kakeibo is on its way to F-Droid. Until then, signed APKs are attached to the
+[releases](https://github.com/tabbouleh-studio/kakeibo-android/releases).
 
 ## Building from source
 
-Requires the Flutter stable SDK (Dart 3.12 or newer) and the Android SDK.
+Requires the Android SDK and Flutter 3.47.2, which is pinned as a git submodule in
+`submodules/flutter` (used by F-Droid's build server; a matching local Flutter install works
+too).
 
 ```sh
 flutter pub get

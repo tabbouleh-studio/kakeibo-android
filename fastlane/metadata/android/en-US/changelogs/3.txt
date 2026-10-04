@@ -1,0 +1,1 @@
+Packaging changes for F-Droid (Flutter pinned as a git submodule). No changes to the app itself.
