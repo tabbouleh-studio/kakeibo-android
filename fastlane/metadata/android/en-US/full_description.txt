@@ -1,0 +1,25 @@
+<p><b>Kakeibo</b> is a calm, simple budgeting app based on <i>kakeibo</i> (家計簿), the Japanese method of mindful spending. Instead of tracking every cent automatically, you plan your month with intention, write down what you spend, and regularly reflect on how to improve.</p>
+
+<p><b>Private by design.</b> Kakeibo works fully offline and does not even have permission to use the internet. No account, no ads, no analytics, no tracking. Your data never leaves your phone.</p>
+
+<p><b>How it works</b></p>
+<ul>
+<li><b>Plan your month:</b> enter your income, fixed costs and savings goal. Kakeibo shows what is left to spend, and a daily allowance.</li>
+<li><b>Record expenses in seconds:</b> type the amount, pick one of the four kakeibo categories (Needs, Wants, Culture, Extra) and save.</li>
+<li><b>See where you stand:</b> money left, spending per category, and a savings ring. Overspending eats into your savings first, so you always know the real picture.</li>
+<li><b>Reflect:</b> weekly and monthly reviews built on the four kakeibo questions: How much did I have? How much did I want to save? How much did I spend? How can I improve?</li>
+</ul>
+
+<p><b>Features</b></p>
+<ul>
+<li>Ledger grouped by day, with search, editing and undo</li>
+<li>Custom month start (for example your payday)</li>
+<li>Recurring expenses such as subscriptions, added automatically when due</li>
+<li>Any currency, with the right number of decimals</li>
+<li>Backup and restore to a file you keep, plus CSV export for spreadsheets</li>
+<li>Optional app lock with your fingerprint, face or phone PIN</li>
+<li>Privacy mask that hides amounts in public</li>
+<li>Light and dark themes</li>
+</ul>
+
+<p>Kakeibo is free and open source software, licensed under the GPL-3.0. Made with love by Tabbouleh Studio.</p>
