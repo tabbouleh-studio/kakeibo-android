@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,6 +33,9 @@ class SettingsNotifier extends Notifier<AppSettings> {
       lockEnabled: prefs.getBool(AppSettings.lockEnabledKey) ?? false,
       currencyCode: prefs.getString(AppSettings.currencyKey) ?? 'KWD',
       hideAmounts: prefs.getBool(AppSettings.hideAmountsKey) ?? false,
+      themeMode:
+          ThemeMode.values.asNameMap()[prefs.getString(AppSettings.themeModeKey)] ??
+          ThemeMode.system,
       lastBackupAt: backupMillis == null ? null : DateTime.fromMillisecondsSinceEpoch(backupMillis),
     );
   }
@@ -61,6 +65,11 @@ class SettingsNotifier extends Notifier<AppSettings> {
     state = state.copyWith(hideAmounts: hide);
   }
 
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _prefs.setString(AppSettings.themeModeKey, mode.name);
+    state = state.copyWith(themeMode: mode);
+  }
+
   Future<void> setLastBackupAt(DateTime time) async {
     await _prefs.setInt(AppSettings.lastBackupAtKey, time.millisecondsSinceEpoch);
     state = state.copyWith(lastBackupAt: time);
@@ -72,6 +81,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
     await setLockEnabled(s.lockEnabled);
     await setCurrency(s.currencyCode);
     await setHideAmounts(s.hideAmounts);
+    await setThemeMode(ThemeMode.values.asNameMap()[s.themeMode] ?? ThemeMode.system);
   }
 }
 

@@ -28,6 +28,7 @@ class BackupSettings {
     required this.lockEnabled,
     this.currencyCode = 'KWD',
     this.hideAmounts = false,
+    this.themeMode = 'system',
   });
 
   final int monthStartDay;
@@ -35,6 +36,9 @@ class BackupSettings {
   final bool lockEnabled;
   final String currencyCode;
   final bool hideAmounts;
+
+  /// 'system', 'light' or 'dark'.
+  final String themeMode;
 }
 
 /// Everything the app stores, as written to / read from a backup file.
@@ -69,6 +73,7 @@ class BackupData {
       'lockEnabled': settings.lockEnabled,
       'currency': settings.currencyCode,
       'hideAmounts': settings.hideAmounts,
+      'themeMode': settings.themeMode,
     },
     'entries': [
       for (final e in entries)
@@ -159,7 +164,11 @@ class BackupData {
       // Added later in version 1; older backups were always KWD.
       currencyCode: s.map['currency'] == null ? 'KWD' : s.text('currency'),
       hideAmounts: s.map['hideAmounts'] == null ? false : s.boolean('hideAmounts'),
+      themeMode: s.map['themeMode'] == null ? 'system' : s.text('themeMode'),
     );
+    if (!const {'system', 'light', 'dark'}.contains(settings.themeMode)) {
+      throw const BackupFormatException('settings.themeMode must be system, light or dark.');
+    }
     if (!Currency.isKnown(settings.currencyCode)) {
       throw BackupFormatException('Unknown currency "${settings.currencyCode}" in backup.');
     }

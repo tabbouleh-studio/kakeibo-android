@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode, immutable;
 
 import 'currency.dart';
 
@@ -11,6 +11,7 @@ class AppSettings {
     this.lastBackupAt,
     this.currencyCode = 'KWD',
     this.hideAmounts = false,
+    this.themeMode = ThemeMode.system,
   });
 
   static const monthStartDayKey = 'monthStartDay';
@@ -19,6 +20,7 @@ class AppSettings {
   static const lastBackupAtKey = 'lastBackupAt';
   static const currencyKey = 'currency';
   static const hideAmountsKey = 'hideAmounts';
+  static const themeModeKey = 'themeMode';
   static const keys = {
     monthStartDayKey,
     weekStartDayKey,
@@ -26,6 +28,7 @@ class AppSettings {
     lastBackupAtKey,
     currencyKey,
     hideAmountsKey,
+    themeModeKey,
   };
 
   /// Week start choices offered in settings, as [DateTime.weekday] values.
@@ -33,6 +36,12 @@ class AppSettings {
     DateTime.sunday: 'Sunday',
     DateTime.saturday: 'Saturday',
     DateTime.monday: 'Monday',
+  };
+
+  static const themeModeLabels = {
+    ThemeMode.system: 'System default',
+    ThemeMode.light: 'Light',
+    ThemeMode.dark: 'Dark',
   };
 
   /// Day of the month (1–31) the budget month starts on.
@@ -49,6 +58,9 @@ class AppSettings {
   /// Privacy mask: amounts show as •••• until revealed.
   final bool hideAmounts;
 
+  /// Light, dark, or follow the phone.
+  final ThemeMode themeMode;
+
   Currency get currency => Currency.byCode(currencyCode);
 
   AppSettings copyWith({
@@ -58,6 +70,7 @@ class AppSettings {
     DateTime? lastBackupAt,
     String? currencyCode,
     bool? hideAmounts,
+    ThemeMode? themeMode,
   }) => AppSettings(
     monthStartDay: monthStartDay ?? this.monthStartDay,
     weekStartDay: weekStartDay ?? this.weekStartDay,
@@ -65,6 +78,7 @@ class AppSettings {
     lastBackupAt: lastBackupAt ?? this.lastBackupAt,
     currencyCode: currencyCode ?? this.currencyCode,
     hideAmounts: hideAmounts ?? this.hideAmounts,
+    themeMode: themeMode ?? this.themeMode,
   );
 
   @override
@@ -75,7 +89,8 @@ class AppSettings {
       other.lockEnabled == lockEnabled &&
       other.lastBackupAt == lastBackupAt &&
       other.currencyCode == currencyCode &&
-      other.hideAmounts == hideAmounts;
+      other.hideAmounts == hideAmounts &&
+      other.themeMode == themeMode;
 
   @override
   int get hashCode => Object.hash(
@@ -85,5 +100,6 @@ class AppSettings {
     lastBackupAt,
     currencyCode,
     hideAmounts,
+    themeMode,
   );
 }

@@ -76,6 +76,22 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
+          const _GroupLabel('Appearance'),
+          _Group(
+            children: [
+              _Tile(
+                icon: switch (settings.themeMode) {
+                  ThemeMode.light => Icons.light_mode_outlined,
+                  ThemeMode.dark => Icons.dark_mode_outlined,
+                  ThemeMode.system => Icons.brightness_auto_outlined,
+                },
+                title: 'Theme',
+                subtitle: AppSettings.themeModeLabels[settings.themeMode]!,
+                onTap: () => _pickTheme(context, ref, settings.themeMode),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           const _GroupLabel('Privacy'),
           _Group(
             children: [
@@ -179,6 +195,40 @@ class SettingsScreen extends ConsumerWidget {
           : 'App lock not turned on: ${e.description ?? e.code.name}';
       messenger.showSnackBar(SnackBar(content: Text(text)));
     }
+  }
+
+  Future<void> _pickTheme(BuildContext context, WidgetRef ref, ThemeMode current) async {
+    final mode = await showModalBottomSheet<ThemeMode>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Theme', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            for (final (mode, icon) in const [
+              (ThemeMode.system, Icons.brightness_auto_outlined),
+              (ThemeMode.light, Icons.light_mode_outlined),
+              (ThemeMode.dark, Icons.dark_mode_outlined),
+            ])
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                leading: Icon(icon),
+                title: Text(AppSettings.themeModeLabels[mode]!),
+                subtitle: mode == ThemeMode.system
+                    ? const Text('Follows your phone’s light or dark setting')
+                    : null,
+                trailing: mode == current
+                    ? Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => Navigator.of(context).pop(mode),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (mode != null) await ref.read(settingsProvider.notifier).setThemeMode(mode);
   }
 
   Future<void> _pickMonthStart(BuildContext context, WidgetRef ref, int current) async {

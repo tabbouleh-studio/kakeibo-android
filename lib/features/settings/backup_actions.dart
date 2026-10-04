@@ -129,6 +129,7 @@ BackupSettings _currentSettings(WidgetRef ref) {
     lockEnabled: s.lockEnabled,
     currencyCode: s.currencyCode,
     hideAmounts: s.hideAmounts,
+    themeMode: s.themeMode.name,
   );
 }
 

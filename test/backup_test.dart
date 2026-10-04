@@ -18,6 +18,7 @@ const settings = BackupSettings(
   lockEnabled: true,
   currencyCode: 'USD',
   hideAmounts: true,
+  themeMode: 'light',
 );
 
 Future<void> fill(AppDatabase db) async {
@@ -92,6 +93,7 @@ void main() {
     expect(parsed.settings.lockEnabled, isTrue);
     expect(parsed.settings.currencyCode, 'USD');
     expect(parsed.settings.hideAmounts, isTrue);
+    expect(parsed.settings.themeMode, 'light');
     expect(parsed.entries.first.date, DateTime(2026, 10, 1));
 
     // Restored data behaves like normal data.
@@ -173,10 +175,13 @@ void main() {
       final j = jsonDecode(jsonEncode(valid)) as Map<String, dynamic>;
       (j['settings'] as Map).remove('currency');
       (j['settings'] as Map).remove('hideAmounts');
+      (j['settings'] as Map).remove('themeMode');
       final parsed = BackupData.decode(jsonEncode(j));
       expect(parsed.settings.currencyCode, 'KWD');
       expect(parsed.settings.hideAmounts, isFalse);
+      expect(parsed.settings.themeMode, 'system');
     });
+    test('bad theme', () => rejects((j) => j['settings']['themeMode'] = 'neon', 'themeMode'));
     test('bad week start', () => rejects((j) => j['settings']['weekStartDay'] = 3, 'weekStartDay'));
     test(
       'duplicate entry ids',
